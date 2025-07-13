@@ -7,8 +7,10 @@ from src.db.models import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
 
+
 class BaseRepository(Generic[ModelType]):
     """Базовый класс для всех репозиториев, содержит CRUD операции."""
+
     def __init__(self, model: Type[ModelType], session: AsyncSession) -> None:
         self.model = model
         self.session = session

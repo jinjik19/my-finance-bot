@@ -9,11 +9,11 @@ def get_envelopes_manage_menu() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(text="📋 Список", callback_data="list_envelopes"),
-        InlineKeyboardButton(text="➕ Добавить", callback_data="add_envelope")
+        InlineKeyboardButton(text="➕ Добавить", callback_data="add_envelope"),
     )
     builder.row(
         InlineKeyboardButton(text="✏️ Изменить", callback_data="edit_envelope_menu"),
-        InlineKeyboardButton(text="🗄️ Архивировать", callback_data="archive_envelope_menu")
+        InlineKeyboardButton(text="🗄️ Архивировать", callback_data="archive_envelope_menu"),
     )
     builder.row(InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="back_to_main_manage"))
     return builder.as_markup()
@@ -24,11 +24,11 @@ def get_categories_manage_menu() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(text="📋 Список", callback_data="list_categories"),
-        InlineKeyboardButton(text="➕ Добавить", callback_data="add_category")
+        InlineKeyboardButton(text="➕ Добавить", callback_data="add_category"),
     )
     builder.row(
         InlineKeyboardButton(text="✏️ Изменить", callback_data="edit_category_menu"),
-        InlineKeyboardButton(text="🗄️ Архивировать", callback_data="archive_category_menu")
+        InlineKeyboardButton(text="🗄️ Архивировать", callback_data="archive_category_menu"),
     )
     builder.row(InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="back_to_main_manage"))
     return builder.as_markup()
@@ -39,11 +39,11 @@ def get_goals_manage_menu() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(text="📋 Список целей", callback_data="list_goals"),
-        InlineKeyboardButton(text="➕ Добавить цель", callback_data="add_goal")
+        InlineKeyboardButton(text="➕ Добавить цель", callback_data="add_goal"),
     )
     builder.row(
         InlineKeyboardButton(text="✏️ Изменить", callback_data="edit_goal_menu"),
-        InlineKeyboardButton(text="🗄️ Архивировать", callback_data="archive_goal_menu")
+        InlineKeyboardButton(text="🗄️ Архивировать", callback_data="archive_goal_menu"),
     )
     builder.row(InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="back_to_main_manage"))
     return builder.as_markup()
@@ -54,11 +54,11 @@ def get_phases_manage_menu() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(text="📋 Список / Выбрать", callback_data="list_phases"),
-        InlineKeyboardButton(text="➕ Добавить", callback_data="add_phase")
+        InlineKeyboardButton(text="➕ Добавить", callback_data="add_phase"),
     )
     builder.row(
         InlineKeyboardButton(text="✏️ Изменить", callback_data="edit_phase_menu"),
-        InlineKeyboardButton(text="🗄️ Архивировать", callback_data="archive_phase_menu")
+        InlineKeyboardButton(text="🗄️ Архивировать", callback_data="archive_phase_menu"),
     )
     builder.row(InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="back_to_main_manage"))
     return builder.as_markup()
@@ -69,7 +69,7 @@ def get_scheduler_manage_menu() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(text="📋 Список задач", callback_data="list_tasks"),
-        InlineKeyboardButton(text="➕ Добавить задачу", callback_data="add_task")
+        InlineKeyboardButton(text="➕ Добавить задачу", callback_data="add_task"),
     )
     builder.row(InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="back_to_main_manage"))
 
@@ -81,7 +81,7 @@ def get_task_type_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(text="🔔 Напоминание", callback_data="add_task_type:reminder"),
-        InlineKeyboardButton(text="🤖 Авто-перевод", callback_data="add_task_type:auto_transfer")
+        InlineKeyboardButton(text="🤖 Авто-перевод", callback_data="add_task_type:auto_transfer"),
     )
 
     return builder.as_markup()
@@ -90,14 +90,11 @@ def get_task_type_keyboard() -> InlineKeyboardMarkup:
 def get_edit_envelope_keyboard(envelope_id: int, is_savings: bool) -> InlineKeyboardMarkup:
     """Клавиатура для выбора, что именно редактировать в конверте."""
     builder = InlineKeyboardBuilder()
-    builder.row(
-        InlineKeyboardButton(
-            text="✏️ Название", callback_data=f"edit_envelope_name:{envelope_id}")
-    )
+    builder.row(InlineKeyboardButton(text="✏️ Название", callback_data=f"edit_envelope_name:{envelope_id}"))
     builder.row(
         InlineKeyboardButton(
             text=f"🎯 Сделать {'не' if is_savings else ''}накопительным",
-            callback_data=f"toggle_savings:envelope:{envelope_id}"
+            callback_data=f"toggle_savings:envelope:{envelope_id}",
         )
     )
     builder.row(InlineKeyboardButton(text="⬅️ К меню конвертов", callback_data="manage_envelopes"))
@@ -109,7 +106,7 @@ def get_edit_phase_keyboard(phase_id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(text="Название", callback_data=f"edit_phase_name:{phase_id}"),
-        InlineKeyboardButton(text="Месячную цель", callback_data=f"edit_phase_target:{phase_id}")
+        InlineKeyboardButton(text="Месячную цель", callback_data=f"edit_phase_target:{phase_id}"),
     )
     builder.row(InlineKeyboardButton(text="⬅️ К списку фаз", callback_data="list_phases"))
 
@@ -123,9 +120,7 @@ def get_items_for_action_keyboard(
     builder = InlineKeyboardBuilder()
 
     for item in items:
-        builder.row(
-            InlineKeyboardButton(text=item.name, callback_data=f"{action}:{entity_type}:{item.id}")
-        )
+        builder.row(InlineKeyboardButton(text=item.name, callback_data=f"{action}:{entity_type}:{item.id}"))
 
     return builder.as_markup()
 
@@ -136,9 +131,7 @@ def get_phases_keyboard(phases: list[Phase], current_phase_id: int | None) -> In
 
     for phase in phases:
         text = f"✅ {phase.name}" if phase.id == current_phase_id else phase.name
-        builder.row(
-            InlineKeyboardButton(text=text, callback_data=f"set_phase:{phase.id}")
-        )
+        builder.row(InlineKeyboardButton(text=text, callback_data=f"set_phase:{phase.id}"))
 
     return builder.as_markup()
 

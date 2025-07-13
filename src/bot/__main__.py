@@ -35,10 +35,7 @@ async def main() -> None:
     storage = MemoryStorage()
 
     # Инициализация бота и диспетчера
-    bot = Bot(
-        token=settings.bot_token,
-        default=DefaultBotProperties(parse_mode="HTML")
-    )
+    bot = Bot(token=settings.bot_token, default=DefaultBotProperties(parse_mode="HTML"))
     dp = Dispatcher(storage=storage, session_pool=session_pool)
 
     # Подключаем middleware для аутентификации

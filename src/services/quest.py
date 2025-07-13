@@ -8,10 +8,7 @@ async def get_quest_report(user_id: int, repo: RepoHolder) -> str:
     system_state = await repo.state.get_by_id(1)
 
     if not system_state or not system_state.current_phase_id:
-        return (
-            "Финансовая фаза еще не установлена.\n\n"
-            "Зайдите в `⚙️ Управление` -> `🗺️ Фазы`, чтобы выбрать текущую."
-        )
+        return "Финансовая фаза еще не установлена.\n\nЗайдите в `⚙️ Управление` -> `🗺️ Фазы`, чтобы выбрать текущую."
 
     goal = await repo.goal.get_by_phase_id(system_state.current_phase_id)
 

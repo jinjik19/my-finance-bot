@@ -13,5 +13,5 @@ class Goal(Base):
     name: Mapped[str] = mapped_column(String)
     target_amount: Mapped[float] = mapped_column(Numeric)
     linked_envelope_id: Mapped[int] = mapped_column(ForeignKey("envelopes.id"))
-    status: Mapped[str] = mapped_column(String, default="active") # active, archived
+    status: Mapped[str] = mapped_column(String, default="active")  # active, archived
     phase_id: Mapped[int] = mapped_column(ForeignKey("phases.id"))

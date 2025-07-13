@@ -15,6 +15,7 @@ from src.db.repositories import (
 
 class RepoHolder:
     """Этот класс содержит все репозитории для удобной передачи в хендлеры."""
+
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
         self.user = UserRepository(session)

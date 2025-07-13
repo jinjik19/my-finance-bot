@@ -18,7 +18,7 @@ class TransferRepository(BaseRepository[Transfer]):
             .join(Envelope, self.model.to_envelope_id == Envelope.id)
             .where(
                 and_(
-                    Envelope.is_savings == True,
+                    Envelope.is_savings == True,  # noqa: E712
                     self.model.transfer_date >= start_date,
                     self.model.transfer_date <= end_date,
                 )
@@ -29,9 +29,7 @@ class TransferRepository(BaseRepository[Transfer]):
 
     async def get_total_for_envelope(self, to_envelope_id: int) -> float:
         """Считает общую сумму всех переводов на указанный конверт."""
-        stmt = select(func.sum(self.model.amount)).where(
-            self.model.to_envelope_id == to_envelope_id
-        )
+        stmt = select(func.sum(self.model.amount)).where(self.model.to_envelope_id == to_envelope_id)
         result = await self.session.execute(stmt)
         total = result.scalar_one_or_none()
 

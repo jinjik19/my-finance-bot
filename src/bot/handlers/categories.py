@@ -55,6 +55,7 @@ async def archive_category_menu(callback: CallbackQuery, repo: RepoHolder):
 
 # --- FSM для добавления ---
 
+
 @router.message(AddCategory.choosing_name)
 async def add_category_name_chosen(message: Message, state: FSMContext, bot: Bot):
     await message.delete()
@@ -74,9 +75,7 @@ async def add_category_name_chosen(message: Message, state: FSMContext, bot: Bot
 
 
 @router.callback_query(AddCategory.choosing_type, F.data.startswith("category_type:"))
-async def add_category_type_chosen(
-    callback: CallbackQuery, state: FSMContext, repo: RepoHolder
-):
+async def add_category_type_chosen(callback: CallbackQuery, state: FSMContext, repo: RepoHolder):
     category_type = callback.data.split(":")[1]
     user_data = await state.get_data()
     category_name = user_data.get("category_name")
@@ -90,6 +89,7 @@ async def add_category_type_chosen(
 
 # --- Логика изменения и архивации ---
 
+
 @router.callback_query(F.data.startswith("edit:category:"))
 async def edit_category_start(callback: CallbackQuery, state: FSMContext):
     category_id = int(callback.data.split(":")[2])
@@ -100,9 +100,7 @@ async def edit_category_start(callback: CallbackQuery, state: FSMContext):
 
 
 @router.message(EditCategory.waiting_for_new_name)
-async def edit_category_name_chosen(
-    message: Message, state: FSMContext, repo: RepoHolder, bot: Bot
-):
+async def edit_category_name_chosen(message: Message, state: FSMContext, repo: RepoHolder, bot: Bot):
     await message.delete()
     data = await state.get_data()
     category = await repo.category.get_by_id(data.get("category_id"))
@@ -115,7 +113,7 @@ async def edit_category_name_chosen(
             await bot.edit_message_text(
                 text=f"✅ Название категории изменено на «{message.text}».",
                 chat_id=message.chat.id,
-                message_id=original_message_id
+                message_id=original_message_id,
             )
 
     await state.clear()

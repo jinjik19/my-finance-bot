@@ -18,10 +18,7 @@ class GoalRepository(BaseRepository[Goal]):
 
     async def get_by_phase_id(self, phase_id: int) -> Goal | None:
         """Находит активную цель, привязанную к конкретной фазе."""
-        stmt = select(self.model).where(
-            self.model.phase_id == phase_id,
-            self.model.status == "active"
-        )
+        stmt = select(self.model).where(self.model.phase_id == phase_id, self.model.status == "active")
         result = await self.session.execute(stmt)
 
         return result.scalar_one_or_none()

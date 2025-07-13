@@ -18,7 +18,7 @@ async def list_phases(callback: CallbackQuery, repo: RepoHolder):
     all_phases = await repo.phase.get_all_active()
     await callback.message.edit_text(
         "Выберите вашу текущую финансовую фазу (отмечена ✅):",
-        reply_markup=get_phases_keyboard(all_phases, system_state.current_phase_id if system_state else None)
+        reply_markup=get_phases_keyboard(all_phases, system_state.current_phase_id if system_state else None),
     )
 
 
@@ -61,7 +61,8 @@ async def add_phase_name_chosen(message: Message, state: FSMContext, bot: Bot):
     if data.get("_original_message_id"):
         await bot.edit_message_text(
             "Отлично! Теперь введите ежемесячную цель по накоплениям для этой фазы (например, 75000):",
-            chat_id=message.chat.id, message_id=data.get("_original_message_id")
+            chat_id=message.chat.id,
+            message_id=data.get("_original_message_id"),
         )
 
 
@@ -82,7 +83,8 @@ async def add_phase_target_chosen(message: Message, state: FSMContext, repo: Rep
     if data.get("_original_message_id"):
         await bot.edit_message_text(
             f"✅ Новая фаза «{data.get('name')}» успешно создана!",
-            chat_id=message.chat.id, message_id=data.get("_original_message_id")
+            chat_id=message.chat.id,
+            message_id=data.get("_original_message_id"),
         )
 
 
@@ -99,8 +101,7 @@ async def edit_phase_menu(callback: CallbackQuery, repo: RepoHolder):
 async def edit_phase_start(callback: CallbackQuery):
     phase_id = int(callback.data.split(":")[2])
     await callback.message.edit_text(
-        "Что именно вы хотите изменить в этой фазе?",
-        reply_markup=get_edit_phase_keyboard(phase_id)
+        "Что именно вы хотите изменить в этой фазе?", reply_markup=get_edit_phase_keyboard(phase_id)
     )
 
 
@@ -124,7 +125,8 @@ async def edit_phase_name_chosen(message: Message, state: FSMContext, repo: Repo
         if data.get("_original_message_id"):
             await bot.edit_message_text(
                 f"✅ Название фазы изменено на «{message.text}».",
-                chat_id=message.chat.id, message_id=data.get("_original_message_id")
+                chat_id=message.chat.id,
+                message_id=data.get("_original_message_id"),
             )
 
     await state.clear()
@@ -157,7 +159,8 @@ async def edit_phase_target_chosen(message: Message, state: FSMContext, repo: Re
         if data.get("_original_message_id"):
             await bot.edit_message_text(
                 f"✅ Месячная цель для фазы «{phase.name}» изменена на {monthly_target:.2f} ₽.",
-                chat_id=message.chat.id, message_id=data.get("_original_message_id")
+                chat_id=message.chat.id,
+                message_id=data.get("_original_message_id"),
             )
     await state.clear()
 

@@ -7,7 +7,24 @@ SELECT
 FROM transactions t
 JOIN categories c ON t.category_id = c.id
 WHERE c.type = 'expense'
--- [[AND {{date_filter}}]] -- Опциональный фильтр по дате
+GROUP BY c.name
+ORDER BY total DESC;
+
+-- Теперь, когда вы создадите этот SQL-запрос, в панели "Переменные" справа вам нужно будет:
+-- Найти переменную date_filter.
+-- Установить Тип переменной на "Фильтр по полю".
+-- В поле "Поле для фильтрации" выбрать Transactions -> Transaction Date.
+WITH filtered_transactions AS (
+  SELECT *
+  FROM transactions
+  WHERE {{date_filter}}
+)
+SELECT
+    c.name,
+    sum(t.amount) as total
+FROM filtered_transactions t
+JOIN categories c ON t.category_id = c.id
+WHERE c.type = 'expense'
 GROUP BY c.name
 ORDER BY total DESC;
 
@@ -29,10 +46,9 @@ ORDER BY month, c.type;
 -- Вопрос 3: Прогресс по Главной Цели (для индикатора "Прогресс")
 -- ====================================================================
 SELECT
-    g.name,
-    g.target_amount,
-    (SELECT sum(amount) FROM transfers WHERE to_envelope_id = g.linked_envelope_id) as current_amount
-FROM goals g
+    sum(t.amount) as current_amount
+FROM transfers t
+JOIN goals g ON t.to_envelope_id = g.linked_envelope_id
 JOIN system_state ss ON g.phase_id = ss.current_phase_id
 WHERE g.status = 'active';
 
@@ -61,3 +77,50 @@ FROM
   envelopes AS e
 WHERE
   e.name = '🛡️ Подушка безопасности';
+
+-- ====================================================================
+-- Вопрос 5: Движение средств (для диаграммы "Sankey")
+-- ====================================================================
+-- Поток: Доходы -> Конверты
+WITH filtered_transactions AS (
+  SELECT *
+  FROM transactions
+  WHERE {{date_filter}}
+)
+-- Поток: Доходы -> Конверты
+SELECT
+  c.name AS "source",
+  e.name AS "target",
+  sum(t.amount) AS "value"
+FROM filtered_transactions t
+JOIN categories c ON t.category_id = c.id
+JOIN envelopes e ON t.envelope_id = e.id
+WHERE c.type = 'income'
+GROUP BY c.name, e.name
+
+UNION ALL
+
+-- Поток: Конверты -> Расходы
+SELECT
+  e.name AS "source",
+  c.name AS "target",
+  sum(t.amount) AS "value"
+FROM filtered_transactions t
+JOIN categories c ON t.category_id = c.id
+JOIN envelopes e ON t.envelope_id = e.id
+WHERE c.type = 'expense'
+GROUP BY e.name, c.name
+
+UNION ALL
+
+-- Поток: Конверт -> Конверт (Переводы)
+SELECT
+  ef.name AS "source",
+  et.name AS "target",
+  sum(t.amount) AS "value"
+FROM transfers t
+JOIN envelopes ef ON t.from_envelope_id = ef.id
+JOIN envelopes et ON t.to_envelope_id = et.id
+-- Для переводов можно добавить отдельный фильтр, если нужно
+-- WHERE {{transfer_date_filter}} 
+GROUP BY ef.name, et.name;

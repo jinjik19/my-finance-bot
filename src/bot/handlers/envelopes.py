@@ -57,7 +57,7 @@ async def edit_envelope_start(callback: CallbackQuery, repo: RepoHolder):
 
     await callback.message.edit_text(
         f"Редактирование конверта «{envelope.name}»:",
-        reply_markup=get_edit_envelope_keyboard(envelope.id, envelope.is_savings)
+        reply_markup=get_edit_envelope_keyboard(envelope.id, envelope.is_savings),
     )
 
 
@@ -80,7 +80,8 @@ async def edit_envelope_name_chosen(message: Message, state: FSMContext, repo: R
         if data.get("_original_message_id"):
             await bot.edit_message_text(
                 f"✅ Название конверта изменено на «{message.text}».",
-                chat_id=message.chat.id, message_id=data.get("_original_message_id")
+                chat_id=message.chat.id,
+                message_id=data.get("_original_message_id"),
             )
     await state.clear()
 
@@ -94,9 +95,7 @@ async def toggle_savings_envelope(callback: CallbackQuery, repo: RepoHolder):
         await repo.envelope.update(envelope, is_savings=new_status)
         status_text = "накопительным" if new_status else "обычным"
         await callback.answer(f"Конверт «{envelope.name}» теперь {status_text}.", show_alert=True)
-        await callback.message.edit_reply_markup(
-            reply_markup=get_edit_envelope_keyboard(envelope.id, new_status)
-        )
+        await callback.message.edit_reply_markup(reply_markup=get_edit_envelope_keyboard(envelope.id, new_status))
     else:
         await callback.answer("Конверт не найден.", show_alert=True)
 
@@ -114,9 +113,7 @@ async def add_envelope_name_chosen(message: Message, state: FSMContext, repo: Re
 
     if original_message_id:
         await bot.edit_message_text(
-            text=f"✅ Конверт «{message.text}» создан.",
-            chat_id=message.chat.id,
-            message_id=original_message_id
+            text=f"✅ Конверт «{message.text}» создан.", chat_id=message.chat.id, message_id=original_message_id
         )
 
 
@@ -141,9 +138,7 @@ async def archive_envelope(callback: CallbackQuery, repo: RepoHolder, state: FSM
             f"На конверте «{envelope.name}» осталось {envelope.balance:.2f} ₽. "
             "Нельзя архивировать непустой конверт.\n\n"
             "Пожалуйста, выберите конверт, куда перевести остаток:",
-            reply_markup=get_items_for_action_keyboard(
-                other_envelopes, "archive_transfer_to", "envelope"
-            ),
+            reply_markup=get_items_for_action_keyboard(other_envelopes, "archive_transfer_to", "envelope"),
         )
     else:
         await repo.envelope.update(envelope, is_active=False)
@@ -168,16 +163,12 @@ async def archive_transfer_to_chosen(callback: CallbackQuery, state: FSMContext,
         await state.clear()
         return
 
-    await repo.transfer.create(
-        from_envelope_id=env_from.id, to_envelope_id=env_to.id, amount=amount
-    )
+    await repo.transfer.create(from_envelope_id=env_from.id, to_envelope_id=env_to.id, amount=amount)
     await repo.envelope.update(env_from, balance=0, is_active=False)
     await repo.envelope.update(env_to, balance=env_to.balance + amount)
 
     await state.clear()
     await callback.message.edit_text(
-        f"✅ Остаток {amount:.2f} ₽ переведен на «{env_to.name}».\n"
-        f"✅ Конверт «{env_from.name}» архивирован."
+        f"✅ Остаток {amount:.2f} ₽ переведен на «{env_to.name}».\n✅ Конверт «{env_from.name}» архивирован."
     )
     await callback.answer()
-

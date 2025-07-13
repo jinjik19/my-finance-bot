@@ -8,6 +8,7 @@ from .base import Base
 
 class Phase(Base):
     """Модель для Финансовой Фазы."""
+
     __tablename__ = "phases"
     name: Mapped[str] = mapped_column(unique=True)
     monthly_target: Mapped[Decimal] = mapped_column(Numeric)

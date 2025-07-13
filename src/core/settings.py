@@ -25,12 +25,13 @@ class Settings(BaseSettings):
     # --- DB connection parts ---
     metabase_url: str | None = None
 
-    @model_validator(mode='after')
-    def assemble_db_connection(self) -> 'Settings':
+    @model_validator(mode="after")
+    def assemble_db_connection(self) -> "Settings":
         """Assembles the database_url from its parts."""
         encoded_password = urllib.parse.quote(self.postgres_password)
         self.database_url = f"postgresql+asyncpg://{self.postgres_user}:{encoded_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
 
         return self
+
 
 settings = Settings()

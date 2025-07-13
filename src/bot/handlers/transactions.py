@@ -41,6 +41,7 @@ async def add_transaction_amount_chosen(message: Message, state: FSMContext, rep
         reply_markup=get_items_for_action_keyboard(filtered_categories, "select", "category"),
     )
 
+
 @router.callback_query(AddTransaction.choosing_category, F.data.startswith("select:category:"))
 async def add_transaction_category_chosen(callback: CallbackQuery, state: FSMContext, repo: RepoHolder):
     category_id = int(callback.data.split(":")[-1])
@@ -51,9 +52,9 @@ async def add_transaction_category_chosen(callback: CallbackQuery, state: FSMCon
 
     await state.set_state(AddTransaction.choosing_envelope)
     await callback.message.edit_text(
-        "Выберите конверт:",
-        reply_markup=get_items_for_action_keyboard(envelopes, "select", "envelope")
+        "Выберите конверт:", reply_markup=get_items_for_action_keyboard(envelopes, "select", "envelope")
     )
+
 
 @router.callback_query(AddTransaction.choosing_envelope, F.data.startswith("select:envelope:"))
 async def add_transaction_envelope_chosen(callback: CallbackQuery, state: FSMContext, repo: RepoHolder):
@@ -72,13 +73,19 @@ async def add_transaction_envelope_chosen(callback: CallbackQuery, state: FSMCon
         return
 
     if trans_type == "expense" and envelope.balance < amount:
-        await callback.message.edit_text(f"❌ Недостаточно средств на конверте «{envelope.name}».\nТекущий баланс: `{envelope.balance:.2f} ₽`.", parse_mode="Markdown")
+        current_balance = f"Текущий баланс: {envelope.balance:.2f} ₽."
+        await callback.message.edit_text(
+            f"❌ Недостаточно средств на конверте «{envelope.name}».\n{current_balance}", parse_mode="Markdown"
+        )
         await state.clear()
         return
 
     await repo.transaction.create(
-        user_id=user.id, category_id=category_id, envelope_id=envelope_id,
-        amount=amount, transaction_date=dt.date.today(),
+        user_id=user.id,
+        category_id=category_id,
+        envelope_id=envelope_id,
+        amount=amount,
+        transaction_date=dt.date.today(),
     )
 
     new_balance = envelope.balance - amount if trans_type == "expense" else envelope.balance + amount
@@ -119,6 +126,7 @@ async def make_transfer_amount_chosen(message: Message, state: FSMContext, repo:
         reply_markup=get_items_for_action_keyboard(sufficient_balance_envelopes, "from", "envelope"),
     )
 
+
 @router.callback_query(MakeTransfer.choosing_envelope_from, F.data.startswith("from:envelope:"))
 async def make_transfer_from_chosen(callback: CallbackQuery, state: FSMContext, repo: RepoHolder):
     envelope_from_id = int(callback.data.split(":")[-1])
@@ -150,11 +158,11 @@ async def make_transfer_to_chosen(callback: CallbackQuery, state: FSMContext, re
         await state.clear()
         return
 
-    await repo.transfer.create(
-        from_envelope_id=env_from.id, to_envelope_id=env_to.id, amount=amount
-    )
+    await repo.transfer.create(from_envelope_id=env_from.id, to_envelope_id=env_to.id, amount=amount)
     await repo.envelope.update(env_from, balance=env_from.balance - amount)
     await repo.envelope.update(env_to, balance=env_to.balance + amount)
 
     await state.clear()
-    await callback.message.edit_text(f"✅ Перевод на сумму {amount:.2f} ₽ с «{env_from.name}» на «{env_to.name}» выполнен успешно!")
+    await callback.message.edit_text(
+        f"✅ Перевод на сумму {amount:.2f} ₽ с «{env_from.name}» на «{env_to.name}» выполнен успешно!"
+    )

@@ -20,7 +20,4 @@ class Transaction(Base):
     amount: Mapped[float] = mapped_column(Numeric)
     transaction_date: Mapped[datetime.date] = mapped_column(Date)
     comment: Mapped[str | None]
-    created_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime, server_default=func.now()
-    )
-
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())

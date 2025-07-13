@@ -21,15 +21,8 @@ async def show_stats(message: Message, repo: RepoHolder):
     # Создаем клавиатуру с кнопкой для Metabase, если он настроен
     builder = InlineKeyboardBuilder()
     if settings.metabase_url and "localhost" not in settings.metabase_url:
-        builder.row(
-            InlineKeyboardButton(
-                text="dashboards️ Открыть дэшборд", url=settings.metabase_url
-            )
-        )
+        builder.row(InlineKeyboardButton(text="dashboards️ Открыть дэшборд", url=settings.metabase_url))
 
     await message.answer(
-        report_text,
-        parse_mode="Markdown",
-        reply_markup=builder.as_markup(),
-        disable_web_page_preview=True
+        report_text, parse_mode="Markdown", reply_markup=builder.as_markup(), disable_web_page_preview=True
     )

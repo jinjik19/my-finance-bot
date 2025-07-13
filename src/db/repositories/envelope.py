@@ -1,8 +1,6 @@
-from decimal import Decimal
-from sqlalchemy import func, or_, select
+from sqlalchemy import or_, select
 
 from src.db.models import Envelope
-from src.db.models.category import Category
 
 from .base import BaseRepository
 
@@ -14,8 +12,8 @@ class EnvelopeRepository(BaseRepository[Envelope]):
     async def get_by_owner_id(self, owner_id: int) -> list[Envelope]:
         """Возвращает все АКТИВНЫЕ конверты конкретного пользователя."""
         stmt = select(self.model).where(
-            or_(self.model.owner_id == owner_id, self.model.owner_id == None),
-            self.model.is_active == True,
+            or_(self.model.owner_id == owner_id, self.model.owner_id == None),  # noqa: E711
+            self.model.is_active == True,  # noqa: E712
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())

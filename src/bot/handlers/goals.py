@@ -57,7 +57,8 @@ async def add_goal_name_chosen(message: Message, state: FSMContext, bot: Bot):
     if data.get("_original_message_id"):
         await bot.edit_message_text(
             "Отлично. Теперь введите целевую сумму (например, 150000):",
-            chat_id=message.chat.id, message_id=data.get("_original_message_id")
+            chat_id=message.chat.id,
+            message_id=data.get("_original_message_id"),
         )
 
 
@@ -85,7 +86,7 @@ async def add_goal_amount_chosen(message: Message, state: FSMContext, repo: Repo
             message_id=data.get("_original_message_id"),
             reply_markup=get_items_for_action_keyboard(
                 [e for e in envelopes if e.is_savings], "select_goal_env", "envelope"
-            )
+            ),
         )
 
 
@@ -98,7 +99,7 @@ async def add_goal_envelope_chosen(callback: CallbackQuery, state: FSMContext, r
     await state.set_state(AddGoal.choosing_phase)
     await callback.message.edit_text(
         "К какой финансовой фазе относится эта цель?",
-        reply_markup=get_items_for_action_keyboard(phases, "select_goal_phase", "phase")
+        reply_markup=get_items_for_action_keyboard(phases, "select_goal_phase", "phase"),
     )
 
 
@@ -111,7 +112,7 @@ async def add_goal_phase_chosen(callback: CallbackQuery, state: FSMContext, repo
         name=data.get("name"),
         target_amount=data.get("target_amount"),
         linked_envelope_id=data.get("linked_envelope_id"),
-        phase_id=phase_id
+        phase_id=phase_id,
     )
     await state.clear()
     await callback.message.edit_text(f"✅ Цель «{data.get('name')}» успешно создана!")
@@ -130,7 +131,7 @@ async def edit_goal_menu(callback: CallbackQuery, repo: RepoHolder):
 @router.callback_query(F.data.startswith("edit:goal:"))
 async def edit_goal_start(callback: CallbackQuery, state: FSMContext):
     goal_id = int(callback.data.split(":")[2])
-    await state.set_state(EditGoal.waiting_for_new_name) # Начнем с имени
+    await state.set_state(EditGoal.waiting_for_new_name)  # Начнем с имени
     await state.update_data(goal_id=goal_id, _original_message_id=callback.message.message_id)
     await callback.message.edit_text("Введите новое название для цели:")
     await callback.answer()
@@ -147,7 +148,7 @@ async def edit_goal_name_chosen(message: Message, state: FSMContext, repo: RepoH
             await bot.edit_message_text(
                 f"✅ Название цели изменено на «{message.text}».",
                 chat_id=message.chat.id,
-                message_id=data.get("_original_message_id")
+                message_id=data.get("_original_message_id"),
             )
     await state.clear()
 
@@ -167,7 +168,7 @@ async def archive_goal(callback: CallbackQuery, repo: RepoHolder):
     goal = await repo.goal.get_by_id(goal_id)
 
     if goal:
-        await repo.goal.update(goal, status='archived')
+        await repo.goal.update(goal, status="archived")
         await callback.message.edit_text(f"✅ Цель «{goal.name}» архивирована.")
 
     await callback.answer()

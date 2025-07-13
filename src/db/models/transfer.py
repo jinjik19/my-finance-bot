@@ -16,6 +16,4 @@ class Transfer(Base):
     from_envelope_id: Mapped[int] = mapped_column(ForeignKey("envelopes.id"))
     to_envelope_id: Mapped[int] = mapped_column(ForeignKey("envelopes.id"))
     amount: Mapped[float] = mapped_column(Numeric)
-    transfer_date: Mapped[datetime.datetime] = mapped_column(
-        DateTime, server_default=func.now()
-    )
+    transfer_date: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())

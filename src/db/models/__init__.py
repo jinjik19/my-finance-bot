@@ -19,5 +19,5 @@ __all__ = [
     "Goal",
     "Phase",
     "SystemState",
-    "ScheduledTask"
+    "ScheduledTask",
 ]

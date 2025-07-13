@@ -6,6 +6,7 @@ from src.services.quest import get_quest_report
 
 router = Router()
 
+
 @router.message(F.text == "🔮 Мой квест")
 async def show_quest_progress(message: Message, repo: RepoHolder):
     """

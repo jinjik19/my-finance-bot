@@ -1,4 +1,3 @@
-import datetime
 import logging
 from decimal import Decimal
 
@@ -28,12 +27,7 @@ async def send_reminder(bot: Bot, reminder_text: str, task_id: int | None = None
             logging.error(f"Ошибка отправки напоминаня пользователю {user_id}: {e}")
 
 
-async def perform_auto_transfer(
-    bot: Bot,
-    amount: Decimal,
-    from_envelope_id: int,
-    to_envelope_id: int
-) -> None:
+async def perform_auto_transfer(bot: Bot, amount: Decimal, from_envelope_id: int, to_envelope_id: int) -> None:
     """Выполняет автоматический перевод и уведомляет пользователей."""
     engine = create_async_engine(str(settings.database_url))
     session_pool = async_sessionmaker(engine, expire_on_commit=False)
@@ -50,7 +44,7 @@ async def perform_auto_transfer(
         logging.info(f"Извлечение auto_transfer: {amount} из '{env_from.name}' в '{env_to.name}'")
 
         if env_from.balance < amount:
-            msg = f"⚠️ **Авто-перевод не выполнен!**\nНедостаточно средств на «{env_from.name}» для перевода {amount:.2f} ₽."
+            msg = f"⚠️ **Авто-перевод не выполнен!**\nНедостаточно средств на «{env_from.name}» для перевода {amount:.2f} ₽."  # noqa: E501
         else:
             await repo.transfer.create(from_envelope_id=env_from.id, to_envelope_id=env_to.id, amount=amount)
             await repo.envelope.update(env_from, balance=env_from.balance - amount)
@@ -89,7 +83,7 @@ async def reload_scheduler_jobs(bot: Bot, session_pool: async_sessionmaker):
         try:
             tz = pytz.timezone(user.timezone if user and user.timezone else "UTC")
             scheduler.timezone = tz
-            logging.info(f'Установлена таймзона: {tz}')
+            logging.info(f"Установлена таймзона: {tz}")
         except pytz.UnknownTimeZoneError:
             scheduler.timezone = pytz.utc
             logging.warning(f"Неизвестная таймзона '{user.timezone}', используем UTC.")
@@ -102,21 +96,25 @@ async def reload_scheduler_jobs(bot: Bot, session_pool: async_sessionmaker):
 
             job_func, job_kwargs = None, {"bot": bot}
 
-            if task.task_type == 'reminder':
+            if task.task_type == "reminder":
                 job_func = send_reminder
                 job_kwargs["reminder_text"] = task.reminder_text
-            elif task.task_type == 'auto_transfer':
+            elif task.task_type == "auto_transfer":
                 job_func = perform_auto_transfer
                 job_kwargs.update({
                     "amount": task.amount,
                     "from_envelope_id": task.from_envelope_id,
-                    "to_envelope_id": task.to_envelope_id
+                    "to_envelope_id": task.to_envelope_id,
                 })
 
             if job_func:
                 scheduler.add_job(
-                    job_func, trigger='cron', day=int(task.cron_day),
-                    hour=int(task.cron_hour), kwargs=job_kwargs, id=f"task_{task.id}"
+                    job_func,
+                    trigger="cron",
+                    day=int(task.cron_day),
+                    hour=int(task.cron_hour),
+                    kwargs=job_kwargs,
+                    id=f"task_{task.id}",
                 )
 
     active_jobs = scheduler.get_jobs()

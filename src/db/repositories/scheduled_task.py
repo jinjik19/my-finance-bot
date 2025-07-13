@@ -10,7 +10,7 @@ class ScheduledTaskRepository(BaseRepository[ScheduledTask]):
 
     async def get_all_active(self) -> list[ScheduledTask]:
         """Возвращает все активные задачи."""
-        stmt = select(self.model).where(self.model.is_active == True)
+        stmt = select(self.model).where(self.model.is_active == True)  # noqa: E712
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
