@@ -3,6 +3,7 @@ from decimal import Decimal, InvalidOperation
 from aiogram import Bot, F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from src.bot.keyboards import get_edit_phase_keyboard, get_items_for_action_keyboard, get_phases_keyboard
 from src.bot.states import AddPhase, EditPhase
@@ -23,23 +24,66 @@ async def list_phases(callback: CallbackQuery, repo: RepoHolder):
 
 
 @router.callback_query(F.data.startswith("set_phase:"))
-async def set_user_phase(callback: CallbackQuery, repo: RepoHolder, bot: Bot):
+async def set_user_phase(callback: CallbackQuery, repo: RepoHolder, bot: Bot, session_pool: async_sessionmaker):
     phase_id = int(callback.data.split(":")[1])
     system_state = await repo.state.get_by_id(1)
 
-    if system_state and system_state.current_phase_id == phase_id:
+    if not system_state:
+        await repo.state.create(id=1, current_phase_id=phase_id)
+        await reload_scheduler_jobs(bot, session_pool)
+        await callback.answer(f"✅ Начальная фаза установлена. Расписание загружено.", show_alert=True)
+        await list_phases(callback, repo)
+        return
+
+    old_phase_id = system_state.current_phase_id
+
+    if old_phase_id == phase_id:
         await callback.answer("Эта фаза уже является активной.")
         return
 
-    if not system_state:
-        system_state = await repo.state.create(id=1, current_phase_id=phase_id)
-    else:
-        await repo.state.update(system_state, current_phase_id=phase_id)
+    old_goal = await repo.goal.get_by_phase_id(old_phase_id)
+    new_goal = await repo.goal.get_by_phase_id(phase_id)
 
-    await reload_scheduler_jobs(bot, repo)
+    # Проверяем, что у обеих фаз есть цели и они привязаны к одному конверту
+    if old_goal and new_goal and old_goal.linked_envelope_id == new_goal.linked_envelope_id:
+        envelope = await repo.envelope.get_by_id(old_goal.linked_envelope_id)
 
-    phase = await repo.phase.get_by_id(phase_id)
-    await callback.answer(f"✅ Фаза «{phase.name}» установлена. Расписание обновлено.", show_alert=True)
+        # Считаем остаток
+        surplus = envelope.balance - old_goal.target_amount
+
+        if surplus < 0:
+            surplus = Decimal(0) # Не переносим долг
+
+        # 1. Архивируем старую цель
+        await repo.goal.update(old_goal, status='archived')
+
+        # 2. Создаем "виртуальный" перевод остатка
+        # Мы не меняем баланс, а создаем запись о переводе, чтобы учесть ее в прогрессе новой цели
+        if surplus > 0:
+            # Создаем фиктивный "Системный" конверт для отслеживания таких переносов
+            system_envelope = await repo.envelope.get_by_name("System")
+
+            if not system_envelope:
+                system_envelope = await repo.envelope.create(name="System", is_active=False)
+
+            await repo.transfer.create(
+                from_envelope_id=system_envelope.id,
+                to_envelope_id=new_goal.linked_envelope_id,
+                amount=surplus
+            )
+            await callback.message.answer(
+                f"🎉 Фаза «{old_goal.name}» завершена!\n"
+                f"Остаток `{surplus:.2f} ₽` перенесен на новую цель «{new_goal.name}»."
+            )
+
+    # 3. Устанавливаем новую фазу
+    await repo.state.update(system_state, current_phase_id=phase_id)
+
+    # 4. Перезагружаем расписание
+    await reload_scheduler_jobs(bot, session_pool)
+
+    new_phase = await repo.phase.get_by_id(phase_id)
+    await callback.answer(f"✅ Установлена фаза: {new_phase.name}. Расписание обновлено.", show_alert=True)
     await list_phases(callback, repo)
 
 

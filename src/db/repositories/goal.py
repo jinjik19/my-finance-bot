@@ -22,3 +22,14 @@ class GoalRepository(BaseRepository[Goal]):
         result = await self.session.execute(stmt)
 
         return result.scalar_one_or_none()
+
+    async def get_all_by_phase_id(self, phase_id: int) -> list[Goal]:
+        """
+        Находит ВСЕ активные цели, привязанные к фазе (для списков).
+        """
+        stmt = select(self.model).where(
+            self.model.phase_id == phase_id,
+            self.model.status == "active"
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())

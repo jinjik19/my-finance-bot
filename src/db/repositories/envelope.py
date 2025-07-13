@@ -17,3 +17,9 @@ class EnvelopeRepository(BaseRepository[Envelope]):
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_by_name(self, name: str) -> Envelope | None:
+        """Находит конверт по его точному имени."""
+        stmt = select(self.model).where(self.model.name == name)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()

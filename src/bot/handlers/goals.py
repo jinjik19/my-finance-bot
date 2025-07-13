@@ -13,13 +13,19 @@ router = Router()
 
 @router.callback_query(F.data == "list_goals")
 async def list_goals(callback: CallbackQuery, repo: RepoHolder):
-    goals = await repo.goal.get_all_active()
+    system_state = await repo.state.get_by_id(1)
 
-    if not goals:
-        await callback.answer("Активных целей пока нет.", show_alert=True)
+    if not system_state or not system_state.current_phase_id:
+        await callback.answer("Сначала нужно выбрать активную фазу в меню 'Управление' -> 'Фазы'.", show_alert=True)
         return
 
-    response_text = "Ваши финансовые цели:\n"
+    goals = await repo.goal.get_all_by_phase_id(system_state.current_phase_id)
+
+    if not goals:
+        await callback.answer("Для текущей фазы нет активных целей.", show_alert=True)
+        return
+
+    response_text = "Цели для текущей фазы:\n"
 
     for goal in goals:
         envelope = await repo.envelope.get_by_id(goal.linked_envelope_id)
