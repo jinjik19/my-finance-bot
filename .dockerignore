@@ -1,0 +1,21 @@
+# Исключаем системные файлы
+.DS_Store
+.env
+.git
+.github
+.idea
+.vscode
+
+# Исключаем кэш Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Исключаем данные Metabase и PostgreSQL
+metabase/
+postgres_data/
+
+# Исключаем виртуальное окружение, если оно создается локально
+.venv/
+venv/

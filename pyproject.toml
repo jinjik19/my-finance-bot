@@ -1,0 +1,31 @@
+[project]
+name = "my-finance-bot"
+version = "0.1.0"
+description = "Telegram bot for personal finance management."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiogram>=3.8.0",
+    "sqlalchemy>=2.0.31",
+    "asyncpg>=0.29.0",
+    "pydantic-settings>=2.3.4",
+    "apscheduler>=3.10.4",
+    "alembic>=1.13.2", # Для миграций базы данных
+    "pytz>=2024.1",
+]
+
+[dependency-groups]
+dev = [
+    "bandit>=1.8.6",
+    "ruff>=0.12.2",
+    "pytest",
+    "pytest-asyncio",
+    "aiosqlite",
+]
+
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
