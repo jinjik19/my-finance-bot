@@ -76,22 +76,5 @@ services:
       nginx:
         condition: service_started
 
-  certbot-renew:
-    image: certbot/certbot
-    restart: always
-    volumes:
-      - ./certbot/www:/var/www/certbot
-      - ./certbot/conf:/etc/letsencrypt
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        while true; do
-          certbot renew --webroot -w /var/www/certbot --quiet && nginx -s reload || echo "Renewal failed"
-          sleep 43200
-        done
-    depends_on:
-      - nginx
-
 volumes:
   postgres_data:
