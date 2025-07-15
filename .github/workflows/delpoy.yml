@@ -56,14 +56,8 @@ jobs:
             # Переменная для пути к проекту на сервере
             PROJECT_DIR="/home/${{ secrets.SSH_USER }}/fin_bot_project"
 
-            # Создаем директорию для проекта, если ее нет
             mkdir -p $PROJECT_DIR
-            cd $PROJECT_DIR
-
-            rm -rf $PROJECT_DIR/Dockerfile $PROJECT_DIR/docker-compose.yml $PROJECT_DIR/.env $PROJECT_DIR/nginx $PROJECT_DIR/src $PROJECT_DIR/certbot $PROJECT_DIR/pyproject.toml $PROJECT_DIR/metabase $PROJECT_DIR/.env.example $PROJECT_DIR/scripts $PROJECT_DIR/.dockerignore $PROJECT_DIR/.gitignore $PROJECT_DIR/entrypoint.sh $PROJECT_DIR/Makefile
-
-            cp -r ${{ github.workspace }}/. $PROJECT_DIR/
-
+            rsync -az --delete-before ${{ github.workspace }}/ $PROJECT_DIR/
             cd $PROJECT_DIR
 
             docker compose down --remove-orphans
