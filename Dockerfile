@@ -6,8 +6,6 @@ ENV LC_ALL ru_RU.UTF-8
 
 WORKDIR /app
 
-COPY requirements.txt .
-
 RUN pip install uv
 
 COPY pyproject.toml .
