@@ -54,9 +54,8 @@ jobs:
 
       - name: Copy files via rsync
         run: |
-          rsync -az --delete \
+          rsync -az --delete --exclude-from='.rsync-exclude' \
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
-            --rsync-path="sudo rsync" \
             ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/fin_bot_project/
 
       - name: Deploy on remote server
