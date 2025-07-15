@@ -7,7 +7,9 @@ CONF_DIR="/etc/nginx/conf.d"
 HTTP_TEMPLATE="$TEMPLATE_DIR/metabase-http.template"
 HTTPS_TEMPLATE="$TEMPLATE_DIR/metabase-https.template"
 CONF_FILE="$CONF_DIR/metabase.conf"
-SSL_DIR="/etc/nginx/ssl/$METABASE_DOMAIN"
+
+# Здесь правильный путь сертификатов certbot
+SSL_DIR="/etc/letsencrypt/live/$METABASE_DOMAIN"
 
 echo "Проверяем наличие сертификатов для $METABASE_DOMAIN..."
 
