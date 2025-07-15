@@ -54,7 +54,7 @@ jobs:
 
       - name: Copy files via rsync
         run: |
-          rsync -az --delete \
+          sudo rsync -az --delete \
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
             ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/fin_bot_project/
 
