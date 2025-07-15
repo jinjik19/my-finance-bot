@@ -58,11 +58,12 @@ jobs:
 
             # Создаем директорию для проекта, если ее нет
             mkdir -p $PROJECT_DIR
+            cp -rT ${{ github.workspace }} $PROJECT_DIR/
             cd $PROJECT_DIR
 
             rm -rf .env docker-compose.yml Dockerfile src nginx certbot scripts metabase
 
-            cp -r ${{ github.workspace }}/. $PROJECT_DIR/
+            cp -rT ${{ github.workspace }} $PROJECT_DIR/
 
             cd $PROJECT_DIR
 
