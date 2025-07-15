@@ -38,11 +38,7 @@ services:
   bot:
     build: .
     restart: always
-    environment:
-      BOT_TOKEN: ${BOT_TOKEN}
-      ALLOWED_TELEGRAM_IDS: ${ALLOWED_TELEGRAM_IDS}
-      DATABASE_URL: ${DATABASE_URL}
-      METABASE_URL: ${METABASE_URL}
+    env_file: .env
     volumes:
       - ./src:/app/src
     depends_on:
