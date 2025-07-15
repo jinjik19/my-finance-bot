@@ -50,26 +50,26 @@ jobs:
           
           echo "Nginx config updated with actual domain."
 
-      - name: Copy files to server and deploy
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # Переменная для пути к проекту на сервере
-            PROJECT_DIR="/home/${{ secrets.SSH_USER }}/fin_bot_project"
+      - name: Add SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
 
-            mkdir -p $PROJECT_DIR
-            rsync -az --delete-before ./ $PROJECT_DIR/
-            cd $PROJECT_DIR
+      - name: Copy files via rsync
+        run: |
+          rsync -az --delete \
+            -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
+            ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/fin_bot_project/
 
+      - name: Deploy on remote server
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            cd /home/${{ secrets.SSH_USER }}/fin_bot_project
             docker compose down --remove-orphans
             docker compose pull
             docker compose up --build -d db metabase bot nginx certbot
-
             sleep 10
-
             docker compose restart nginx
-
             echo "Deployment complete!"
+          EOF
