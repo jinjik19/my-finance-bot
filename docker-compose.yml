@@ -74,12 +74,7 @@ services:
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
-    entrypoint: >
-      sh -c "sleep 10 &&
-             certbot certonly --webroot --webroot-path=/var/www/certbot
-             --agree-tos --no-eff-email
-             --email ${CERTBOT_EMAIL}
-             -d ${METABASE_DOMAIN} && docker exec $(docker ps -qf name=nginx) nginx -s reload"
+    entrypoint: sh -c "sleep 10 && certbot certonly --webroot --webroot-path=/var/www/certbot --agree-tos --no-eff-email --email ${CERTBOT_EMAIL} -d ${METABASE_DOMAIN}"
     depends_on:
       nginx:
         condition: service_started
