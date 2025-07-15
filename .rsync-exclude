@@ -1,1 +1,3 @@
 certbot/
+__pycache__/
+*.pyc
