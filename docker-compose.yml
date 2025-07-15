@@ -52,28 +52,49 @@ services:
     restart: always
     environment:
       METABASE_DOMAIN: ${METABASE_DOMAIN}
+      CERTBOT_EMAIL: ${CERTBOT_EMAIL}
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf.template:/etc/nginx/templates/nginx.conf.template
+      - ./nginx/templates:/etc/nginx/templates
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./certbot/www:/var/www/certbot:ro
-      - ./certbot/conf:/etc/nginx/ssl:ro
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/nginx/ssl
+      - ./nginx/start-nginx.sh:/start-nginx.sh
+      - /var/run/docker.sock:/var/run/docker.sock # если нужно
     depends_on:
       metabase:
         condition: service_healthy
+    entrypoint: /start-nginx.sh
 
   certbot:
     image: certbot/certbot
-    restart: always
+    restart: "on-failure"
     volumes:
-      - ./certbot/www:/var/www/certbot:rw
-      - ./certbot/conf:/etc/letsencrypt:rw
-    command: certonly --webroot -w /var/www/certbot --force-renewal --email ${CERTBOT_EMAIL} -d ${METABASE_DOMAIN} --agree-tos --non-interactive
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    command: certonly --webroot -w /var/www/certbot --email ${CERTBOT_EMAIL} -d ${METABASE_DOMAIN} --agree-tos --non-interactive
     depends_on:
       nginx:
         condition: service_started
+
+  certbot-renew:
+    image: certbot/certbot
+    restart: always
+    volumes:
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        while true; do
+          certbot renew --webroot -w /var/www/certbot --quiet && nginx -s reload || echo "Renewal failed"
+          sleep 43200
+        done
+    depends_on:
+      - nginx
 
 volumes:
   postgres_data:
