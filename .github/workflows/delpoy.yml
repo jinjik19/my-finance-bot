@@ -36,16 +36,6 @@ jobs:
           echo "MB_DB_USER=${{ secrets.POSTGRES_USER }}" >> .env
           echo "MB_DB_PASS=${{ secrets.POSTGRES_PASSWORD }}" >> .env
 
-      - name: Replace Metabase domain in Nginx config
-        run: |
-          METABASE_DOMAIN_VALUE="${{ secrets.METABASE_DOMAIN }}"
-          ESCAPED_METABASE_DOMAIN=$(echo "$METABASE_DOMAIN_VALUE" | sed 's/\./\\./g')
-          sed -i "s|server_name \\${METABASE_DOMAIN};|server_name $ESCAPED_METABASE_DOMAIN;|g" ./nginx/conf.d/metabase.conf
-          sed -i "s|ssl_certificate /etc/nginx/ssl/\\${METABASE_DOMAIN}/fullchain.pem;|ssl_certificate /etc/nginx/ssl/$ESCAPED_METABASE_DOMAIN/fullchain.pem;|g" ./nginx/conf.d/metabase.conf
-          sed -i "s|ssl_certificate_key /etc/nginx/ssl/\\${METABASE_DOMAIN}/privkey.pem;|ssl_certificate_key /etc/nginx/ssl/$ESCAPED_METABASE_DOMAIN/privkey.pem;|g" ./nginx/conf.d/metabase.conf
-          
-          echo "Nginx config updated with actual domain."
-
       - name: Add SSH key
         run: |
           mkdir -p ~/.ssh
