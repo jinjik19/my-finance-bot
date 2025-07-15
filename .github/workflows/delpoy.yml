@@ -1,0 +1,68 @@
+name: Deploy Bot and Services
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file for deployment
+        run: |
+          echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> .env
+          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
+          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
+          echo "POSTGRES_HOST=${{ secrets.POSTGRES_HOST }}" >> .env
+          echo "POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}" >> .env
+          echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" >> .env
+          echo "ALLOWED_TELEGRAM_IDS=${{ secrets.ALLOWED_TELEGRAM_IDS }}" >> .env
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+          echo "METABASE_URL=${{ secrets.METABASE_URL }}" >> .env
+          echo "METABASE_DOMAIN=${{ secrets.METABASE_DOMAIN }}" >> .env
+          echo "CERTBOT_EMAIL=${{ secrets.CERTBOT_EMAIL }}" >> .env
+          echo "MB_DB_TYPE=postgres" >> .env
+          echo "MB_DB_HOST=db" >> .env
+          echo "MB_DB_PORT=5432" >> .env
+          echo "MB_DB_DBNAME=${{ secrets.POSTGRES_DB }}" >> .env
+          echo "MB_DB_USER=${{ secrets.POSTGRES_USER }}" >> .env
+          echo "MB_DB_PASS=${{ secrets.POSTGRES_PASSWORD }}" >> .env
+
+      - name: Replace Metabase domain in Nginx config
+        run: |
+          sed -i "s|\\${METABASE_DOMAIN}|${{ secrets.METABASE_DOMAIN }}|g" ./nginx/conf.d/metabase.conf
+
+      - name: Copy files to server and deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            mkdir -p /home/${{ secrets.SSH_USER }}/fin_bot_project
+            cd /home/${{ secrets.SSH_USER }}/fin_bot_project
+
+            rm -rf .env docker-compose.yml Dockerfile src nginx certbot scripts metabase
+
+            cp -r ${{ github.workspace }}/. .
+
+            sudo apt-get update && sudo apt-get install -y docker-compose-plugin
+
+            docker-compose down --remove-orphans # Останавливаем старые, удаляем неиспользуемые сервисы
+            docker-compose pull # Скачиваем свежие базовые образы
+
+            docker-compose up --build -d db metabase bot nginx certbot
+
+            sleep 10
+
+            docker-compose restart nginx
+
+            echo "Deployment complete!"
