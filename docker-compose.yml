@@ -58,7 +58,7 @@ services:
       - ./nginx/templates:/etc/nginx/templates
       - ./nginx/conf.d:/etc/nginx/conf.d
       - ./certbot/www:/var/www/certbot
-      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/conf:/etc/nginx/ssl
       - ./nginx/start-nginx.sh:/start-nginx.sh
     depends_on:
       metabase:
@@ -67,7 +67,7 @@ services:
 
   certbot:
     image: certbot/certbot
-    restart: "on-failure"
+    restart: "no"
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
