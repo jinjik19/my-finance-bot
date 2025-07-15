@@ -8,7 +8,9 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir --timeout 120 -r requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends dnsutils && \
+    pip install --no-cache-dir  -r requirements.txt && \
+    apt-get remove -y dnsutils && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
