@@ -58,16 +58,13 @@ jobs:
 
             # Создаем директорию для проекта, если ее нет
             mkdir -p $PROJECT_DIR
-            cp -rT ${{ github.workspace }} $PROJECT_DIR/
             cd $PROJECT_DIR
 
-            rm -rf .env docker-compose.yml Dockerfile src nginx certbot scripts metabase
+            rm -rf $PROJECT_DIR/Dockerfile $PROJECT_DIR/docker-compose.yml $PROJECT_DIR/.env $PROJECT_DIR/nginx $PROJECT_DIR/src $PROJECT_DIR/certbot $PROJECT_DIR/pyproject.toml $PROJECT_DIR/metabase $PROJECT_DIR/.env.example $PROJECT_DIR/scripts $PROJECT_DIR/.dockerignore $PROJECT_DIR/.gitignore $PROJECT_DIR/entrypoint.sh $PROJECT_DIR/Makefile
 
-            cp -rT ${{ github.workspace }} $PROJECT_DIR/
+            cp -r ${{ github.workspace }}/. $PROJECT_DIR/
 
             cd $PROJECT_DIR
-
-            sudo apt-get update && sudo apt-get install -y docker-compose-plugin
 
             docker compose down --remove-orphans
             docker compose pull
