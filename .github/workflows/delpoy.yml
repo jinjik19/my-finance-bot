@@ -53,22 +53,27 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            mkdir -p /home/${{ secrets.SSH_USER }}/fin_bot_project
-            cd /home/${{ secrets.SSH_USER }}/fin_bot_project
+            # Переменная для пути к проекту на сервере
+            PROJECT_DIR="/home/${{ secrets.SSH_USER }}/fin_bot_project"
+
+            # Создаем директорию для проекта, если ее нет
+            mkdir -p $PROJECT_DIR
+            cd $PROJECT_DIR
 
             rm -rf .env docker-compose.yml Dockerfile src nginx certbot scripts metabase
 
-            cp -r ${{ github.workspace }}/. .
+            cp -r ${{ github.workspace }}/. $PROJECT_DIR/
+
+            cd $PROJECT_DIR
 
             sudo apt-get update && sudo apt-get install -y docker-compose-plugin
 
-            docker-compose down --remove-orphans # Останавливаем старые, удаляем неиспользуемые сервисы
-            docker-compose pull # Скачиваем свежие базовые образы
-
-            docker-compose up --build -d db metabase bot nginx certbot
+            docker compose down --remove-orphans
+            docker compose pull
+            docker compose up --build -d db metabase bot nginx certbot
 
             sleep 10
 
-            docker-compose restart nginx
+            docker compose restart nginx
 
             echo "Deployment complete!"
