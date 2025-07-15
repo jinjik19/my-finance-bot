@@ -6,11 +6,9 @@ ENV LC_ALL ru_RU.UTF-8
 
 WORKDIR /app
 
-RUN pip install uv
+COPY requirements.txt .
 
-COPY pyproject.toml .
-RUN uv pip install --system .
-RUN uv pip install --system "pytest" "pytest-asyncio" "aiosqlite" "ruff" "bandit"
+RUN pip install --no-cache-dir --timeout 120 -r requirements.txt
 
 COPY . .
 
