@@ -58,7 +58,7 @@ services:
       - ./nginx/templates:/etc/nginx/templates
       - ./nginx/conf.d:/etc/nginx/conf.d
       - ./certbot/www:/var/www/certbot
-      - ./certbot/conf:/etc/nginx/ssl
+      - ./certbot/conf:/etc/letsencrypt
       - ./nginx/start-nginx.sh:/start-nginx.sh
     depends_on:
       metabase:
