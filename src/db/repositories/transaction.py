@@ -12,7 +12,7 @@ class TransactionRepository(BaseRepository[Transaction]):
     def __init__(self, session):
         super().__init__(Transaction, session)
 
-    async def get_for_period(self, user_id: int, start_date: dt.date, end_date: dt.date) -> list[Transaction]:
+    async def get_for_period(self, user_id: int, start_date: dt.datetime, end_date: dt.datetime) -> list[Transaction]:
         """Возвращает транзакции пользователя за указанный период."""
         stmt = select(self.model).where(
             and_(

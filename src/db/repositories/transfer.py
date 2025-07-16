@@ -11,7 +11,7 @@ class TransferRepository(BaseRepository[Transfer]):
     def __init__(self, session):
         super().__init__(Transfer, session)
 
-    async def get_savings_for_period(self, start_date: dt.date, end_date: dt.date) -> list[Transfer]:
+    async def get_savings_for_period(self, start_date: dt.datetime, end_date: dt.datetime) -> list[Transfer]:
         """Возвращает переводы в накопительные конверты за период."""
         stmt = (
             select(self.model)

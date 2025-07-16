@@ -24,7 +24,11 @@ RU_MONTHS = [
 async def prepare_current_month_report(repo: RepoHolder) -> str:
     """Готовит расширенный текстовый отчет за текущий месяц."""
     today = dt.date.today()
+    print('DEBUG_1', today)
     start_of_month = today.replace(day=1)
+    print('DEBUG_2', start_of_month)
+    end_of_today = dt.datetime.combine(today, dt.time.max)
+    print('DEBUG_3', start_of_month)
 
     user1_id, user2_id = settings.allowed_telegram_ids
     user1 = await repo.user.get_by_telegram_id(user1_id)
@@ -33,8 +37,8 @@ async def prepare_current_month_report(repo: RepoHolder) -> str:
     if not user1 or not user2:
         return "Не удалось найти обоих пользователей в базе данных."
 
-    user1_trans = await repo.transaction.get_for_period(user1.id, start_of_month, today)
-    user2_trans = await repo.transaction.get_for_period(user2.id, start_of_month, today)
+    user1_trans = await repo.transaction.get_for_period(user1.id, start_of_month, end_of_today)
+    user2_trans = await repo.transaction.get_for_period(user2.id, start_of_month, end_of_today)
     all_transactions = user1_trans + user2_trans
 
     if not all_transactions:
@@ -53,12 +57,11 @@ async def prepare_current_month_report(repo: RepoHolder) -> str:
             total_expense += t.amount
             expenses_by_user[t.user_id] += t.amount
 
-    savings_transfers = await repo.transfer.get_savings_for_period(start_of_month, today)
-    print('DEBUG_1', savings_transfers)
+    savings_transfers = await repo.transfer.get_savings_for_period(start_of_month, end_of_today)
+    print('DEBUG_3', savings_transfers)
     total_savings = sum(t.amount for t in savings_transfers)
-    print('DEBUG_2', savings_transfers)
+    print('DEBUG_4', savings_transfers)
     savings_rate = (total_savings / total_income * 100) if total_income > 0 else Decimal(0)
-    print('DEBUG_3', total_income)
 
     net_profit = total_income - total_expense
     profit_emoji = "✅" if net_profit >= 0 else "❗️"
