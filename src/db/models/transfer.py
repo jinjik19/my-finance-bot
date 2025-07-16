@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 
 from sqlalchemy import (
     DateTime,
@@ -15,5 +16,5 @@ class Transfer(Base):
     __tablename__ = "transfers"
     from_envelope_id: Mapped[int] = mapped_column(ForeignKey("envelopes.id"))
     to_envelope_id: Mapped[int] = mapped_column(ForeignKey("envelopes.id"))
-    amount: Mapped[float] = mapped_column(Numeric)
+    amount: Mapped[Decimal] = mapped_column(Numeric)
     transfer_date: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())

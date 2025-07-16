@@ -54,8 +54,11 @@ async def prepare_current_month_report(repo: RepoHolder) -> str:
             expenses_by_user[t.user_id] += t.amount
 
     savings_transfers = await repo.transfer.get_savings_for_period(start_of_month, today)
+    print('DEBUG_1', savings_transfers)
     total_savings = sum(t.amount for t in savings_transfers)
+    print('DEBUG_2', savings_transfers)
     savings_rate = (total_savings / total_income * 100) if total_income > 0 else Decimal(0)
+    print('DEBUG_3', total_income)
 
     net_profit = total_income - total_expense
     profit_emoji = "✅" if net_profit >= 0 else "❗️"
