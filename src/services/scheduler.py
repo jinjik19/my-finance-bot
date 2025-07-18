@@ -1,3 +1,5 @@
+import calendar
+import datetime as dt
 import logging
 from decimal import Decimal
 
@@ -5,12 +7,70 @@ import pytz
 from aiogram import Bot
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from workalendar.europe import Russia
 
 from src.core.settings import settings
+from src.db.models.scheduled_task import ScheduledTask
 from src.db.repo_holder import RepoHolder
 
 # Глобальная переменная для хранения планировщика
 scheduler = AsyncIOScheduler()
+
+national_calendar = Russia()
+# Дни, которые переносятся НАЗАД на последний рабочий день
+DAYS_TO_MOVE_BACK = {5, 20}
+# Дни, которые переносятся ВПЕРЁД на первый рабочий день
+DAYS_TO_MOVE_FORWARD = {10, 25}
+
+
+def is_weekend(date_obj: dt.date) -> bool:
+    """Проверяет, является ли дата выходным (суббота или воскресенье)."""
+    return date_obj.weekday() >= calendar.SATURDAY
+
+
+def is_holiday(date_obj: dt.date) -> bool:
+    """Проверяет, является ли дата официальным праздником."""
+    return national_calendar.is_holiday(date_obj)
+
+
+def find_nearest_workday(original_date: dt.date, move_forward: bool) -> dt.date:
+    """Находит ближайший рабочий день, двигаясь вперед или назад."""
+    current_date = original_date
+
+    while is_weekend(current_date) or is_holiday(current_date):
+        if move_forward:
+            current_date += dt.timedelta(days=1)
+        else:
+            current_date -= dt.timedelta(days=1)
+
+    return current_date
+
+
+def get_corrected_day(original_day_of_month: int, task: ScheduledTask, tz: str) -> int:
+    """Получаем корректный день для уведомленя"""
+    now = dt.datetime.now(tz=tz) # Используем таймзону планировщика
+    target_date_this_month = dt.date(now.year, now.month, original_day_of_month)
+
+    if original_day_of_month in DAYS_TO_MOVE_BACK:
+        # Если день выпадает на выходной, переносим НАЗАД
+        if is_weekend(target_date_this_month):
+            corrected_date = find_nearest_workday(target_date_this_month, move_forward=False)
+            corrected_day = corrected_date.day
+            logging.info(
+                f"Задача (ID:{task.id}) на {original_day_of_month} перенесена НАЗАД на {corrected_day} из-за выходного."
+            )
+    elif original_day_of_month in DAYS_TO_MOVE_FORWARD:
+        # Если день выпадает на выходной, переносим ВПЕРЁД
+        if is_weekend(target_date_this_month):
+            corrected_date = find_nearest_workday(target_date_this_month, move_forward=True)
+            corrected_day = corrected_date.day
+            logging.info(
+                f"Задача (ID:{task.id}) на {original_day_of_month} перенесена ВПЕРЁД на {corrected_day} из-за выходного." # noqa: E501
+            )
+    else:
+        corrected_day = original_day_of_month
+
+    return corrected_date
 
 
 async def send_reminder(bot: Bot, reminder_text: str, task_id: int | None = None):
@@ -95,6 +155,7 @@ async def reload_scheduler_jobs(bot: Bot, session_pool: async_sessionmaker):
                 continue
 
             job_func, job_kwargs = None, {"bot": bot}
+            corrected_day = get_corrected_day(int(task.cron_day), task, tz)
 
             if task.task_type == "reminder":
                 job_func = send_reminder
@@ -111,7 +172,7 @@ async def reload_scheduler_jobs(bot: Bot, session_pool: async_sessionmaker):
                 scheduler.add_job(
                     job_func,
                     trigger="cron",
-                    day=int(task.cron_day),
+                    day=corrected_day,
                     hour=int(task.cron_hour),
                     kwargs=job_kwargs,
                     id=f"task_{task.id}",

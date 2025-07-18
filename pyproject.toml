@@ -12,6 +12,7 @@ dependencies = [
     "apscheduler>=3.10.4",
     "alembic>=1.13.2", # Для миграций базы данных
     "pytz>=2024.1",
+    "workalendar>=17.0.0",
 ]
 
 [dependency-groups]
@@ -26,6 +27,13 @@ dev = [
 
 [tool.ruff]
 line-length = 120
-
-[tool.ruff.lint]
+exclude = [
+    "venv",
+    ".venv",
+    ".git",
+    "__pycache__",
+    "scripts",
+    "alembic",
+]
 select = ["E", "F", "W", "I"]
+target-version = "py312"

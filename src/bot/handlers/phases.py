@@ -31,7 +31,7 @@ async def set_user_phase(callback: CallbackQuery, repo: RepoHolder, bot: Bot, se
     if not system_state:
         await repo.state.create(id=1, current_phase_id=phase_id)
         await reload_scheduler_jobs(bot, session_pool)
-        await callback.answer(f"✅ Начальная фаза установлена. Расписание загружено.", show_alert=True)
+        await callback.answer("✅ Начальная фаза установлена. Расписание загружено.", show_alert=True)
         await list_phases(callback, repo)
         return
 
