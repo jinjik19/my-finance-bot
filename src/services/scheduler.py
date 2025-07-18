@@ -46,7 +46,7 @@ def find_nearest_workday(original_date: dt.date, move_forward: bool) -> dt.date:
     return current_date
 
 
-def get_corrected_day(original_day_of_month: int, task: ScheduledTask, tz: str) -> int:
+def get_corrected_day(original_day_of_month: int, task: ScheduledTask, tz: pytz.BaseTzInfo) -> int:
     """Получаем корректный день для уведомленя"""
     now = dt.datetime.now(tz=tz) # Используем таймзону планировщика
     target_date_this_month = dt.date(now.year, now.month, original_day_of_month)
@@ -70,7 +70,74 @@ def get_corrected_day(original_day_of_month: int, task: ScheduledTask, tz: str) 
     else:
         corrected_day = original_day_of_month
 
-    return corrected_date
+    return corrected_day
+
+
+async def get_scheduler_timezone_and_user(session: async_sessionmaker) -> pytz.BaseTzInfo:
+    """Извлекает таймзону пользователя и возвращает её."""
+    repo = RepoHolder(session)
+    user_timezone = "UTC"
+
+    for user_id in settings.allowed_telegram_ids:
+        user = await repo.user.get_by_telegram_id(user_id)
+
+        if user and user.timezone:
+            user_timezone = user.timezone
+            break
+
+    try:
+        tz = pytz.timezone(user_timezone)
+        logging.info(f"Установлена таймзона: {tz}")
+        return tz
+    except pytz.UnknownTimeZoneError:
+        logging.warning(f"Неизвестная таймзона '{user_timezone}', используем UTC.")
+        return pytz.utc
+
+
+async def get_active_scheduled_tasks(session: async_sessionmaker) -> list[ScheduledTask]:
+    """Загружает активные задачи из базы данных."""
+    repo = RepoHolder(session)
+    system_state = await repo.state.get_by_id(1)
+
+    if not system_state or not system_state.current_phase_id:
+        logging.warning("Нет активных фаз. Планировщик пустой.")
+        return []
+
+    tasks = await repo.scheduled_task.get_by_phase_id(system_state.current_phase_id)
+
+    return [task for task in tasks if task.is_active]
+
+
+def create_job_details(task: ScheduledTask, bot: Bot) -> tuple | None:
+    """Определяет job_func и job_kwargs для конкретной задачи."""
+    job_func, job_kwargs = None, {"bot": bot}
+
+    if task.task_type == "reminder":
+        job_func = send_reminder
+        job_kwargs["reminder_text"] = task.reminder_text
+    elif task.task_type == "auto_transfer":
+        job_func = perform_auto_transfer
+        job_kwargs.update({
+            "amount": task.amount,
+            "from_envelope_id": task.from_envelope_id,
+            "to_envelope_id": task.to_envelope_id,
+        })
+
+    return (job_func, job_kwargs) if job_func else None
+
+
+def add_job_to_scheduler(
+    job_func, job_kwargs, task_id: int, corrected_day: int, cron_hour: int
+):
+    """Добавляет задачу в планировщик."""
+    scheduler.add_job(
+        job_func,
+        trigger="cron",
+        day=corrected_day,
+        hour=cron_hour,
+        kwargs=job_kwargs,
+        id=f"task_{task_id}",
+    )
 
 
 async def send_reminder(bot: Bot, reminder_text: str, task_id: int | None = None):
@@ -125,57 +192,24 @@ async def reload_scheduler_jobs(bot: Bot, session_pool: async_sessionmaker):
     scheduler.remove_all_jobs()
 
     async with session_pool() as session:
-        repo = RepoHolder(session)
-        system_state = await repo.state.get_by_id(1)
+        scheduler_timezone = await get_scheduler_timezone_and_user(session)
+        scheduler.timezone = scheduler_timezone
+        active_tasks = await get_active_scheduled_tasks(session)
 
-        if not system_state or not system_state.current_phase_id:
-            logging.warning("Нет активных фаз. Планировщие пустой.")
+        if not active_tasks:
+            logging.info("Нет активных задач для планирования. Планировщик пустой.")
             return
 
-        user = None
+        for task in active_tasks:
+            job_details = create_job_details(task, bot)
 
-        for user_id in settings.allowed_telegram_ids:
-            user = await repo.user.get_by_telegram_id(user_id)
+            if job_details:
+                job_func, job_kwargs = job_details
 
-            if user:
-                break
+                corrected_day = get_corrected_day(int(task.cron_day), task, scheduler_timezone)
 
-        try:
-            tz = pytz.timezone(user.timezone if user and user.timezone else "UTC")
-            scheduler.timezone = tz
-            logging.info(f"Установлена таймзона: {tz}")
-        except pytz.UnknownTimeZoneError:
-            scheduler.timezone = pytz.utc
-            logging.warning(f"Неизвестная таймзона '{user.timezone}', используем UTC.")
-
-        tasks = await repo.scheduled_task.get_by_phase_id(system_state.current_phase_id)
-
-        for task in tasks:
-            if not task.is_active:
-                continue
-
-            job_func, job_kwargs = None, {"bot": bot}
-            corrected_day = get_corrected_day(int(task.cron_day), task, tz)
-
-            if task.task_type == "reminder":
-                job_func = send_reminder
-                job_kwargs["reminder_text"] = task.reminder_text
-            elif task.task_type == "auto_transfer":
-                job_func = perform_auto_transfer
-                job_kwargs.update({
-                    "amount": task.amount,
-                    "from_envelope_id": task.from_envelope_id,
-                    "to_envelope_id": task.to_envelope_id,
-                })
-
-            if job_func:
-                scheduler.add_job(
-                    job_func,
-                    trigger="cron",
-                    day=corrected_day,
-                    hour=int(task.cron_hour),
-                    kwargs=job_kwargs,
-                    id=f"task_{task.id}",
+                add_job_to_scheduler(
+                    job_func, job_kwargs, task.id, corrected_day, int(task.cron_hour)
                 )
 
     active_jobs = scheduler.get_jobs()
