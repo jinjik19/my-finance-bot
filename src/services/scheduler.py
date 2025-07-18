@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from workalendar.europe import Russia
 
 from src.core.settings import settings
+from src.db.models.envelope import Envelope
 from src.db.models.scheduled_task import ScheduledTask
 from src.db.repo_holder import RepoHolder
 
@@ -49,7 +50,14 @@ def find_nearest_workday(original_date: dt.date, move_forward: bool) -> dt.date:
 def get_corrected_day(original_day_of_month: int, task: ScheduledTask, tz: pytz.BaseTzInfo) -> int:
     """Получаем корректный день для уведомленя"""
     now = dt.datetime.now(tz=tz) # Используем таймзону планировщика
-    target_date_this_month = dt.date(now.year, now.month, original_day_of_month)
+    corrected_day = original_day_of_month
+
+    try:
+        target_date_this_month = dt.date(now.year, now.month, original_day_of_month)
+    except ValueError:
+        last_day_of_month = calendar.monthrange(now.year, now.month)[1]
+        target_date_this_month = dt.date(now.year, now.month, last_day_of_month)
+        logging.warning(f"Задача на {original_day_of_month} день, но в текущем месяце нет такого дня. Используем {last_day_of_month}.")
 
     if original_day_of_month in DAYS_TO_MOVE_BACK:
         # Если день выпадает на выходной, переносим НАЗАД
@@ -67,8 +75,6 @@ def get_corrected_day(original_day_of_month: int, task: ScheduledTask, tz: pytz.
             logging.info(
                 f"Задача (ID:{task.id}) на {original_day_of_month} перенесена ВПЕРЁД на {corrected_day} из-за выходного." # noqa: E501
             )
-    else:
-        corrected_day = original_day_of_month
 
     return corrected_day
 
@@ -140,6 +146,45 @@ def add_job_to_scheduler(
     )
 
 
+async def get_envelopes_for_transfer(
+    repo: RepoHolder, from_id: int, to_id: int
+) -> tuple[Envelope | None, Envelope | None]:
+    """Извлекает конверты по ID."""
+    env_from = await repo.envelope.get_by_id(from_id)
+    env_to = await repo.envelope.get_by_id(to_id)
+
+    if not env_from or not env_to:
+        logging.error(f"Не найден один из конвертов: from_id={from_id} или to_id={to_id}")
+        return None, None
+
+    return env_from, env_to
+
+
+async def execute_transfer_and_update_balances(
+    repo: RepoHolder, amount: Decimal, env_from: Envelope, env_to: Envelope
+) -> tuple[bool, str]:
+    """Выполняет перевод и обновляет балансы, возвращая статус и сообщение."""
+    if env_from.balance < amount:
+        msg = f"⚠️ **Авто-перевод не выполнен!**\nНедостаточно средств на «{env_from.name}» для перевода {amount:.2f} ₽."
+        return False, msg
+
+    await repo.transfer.create(from_envelope_id=env_from.id, to_envelope_id=env_to.id, amount=amount)
+    await repo.envelope.update(env_from, balance=env_from.balance - amount)
+    await repo.envelope.update(env_to, balance=env_to.balance + amount)
+    msg = f"🤖 **Авто-перевод выполнен!**\n✅ {amount:.2f} ₽ переведено с «{env_from.name}» на «{env_to.name}»."
+
+    return True, msg
+
+
+async def send_transfer_notification(bot: Bot, message: str):
+    """Отправляет уведомление о переводе всем пользователям."""
+    for user_id in settings.allowed_telegram_ids:
+        try:
+            await bot.send_message(user_id, message, parse_mode="Markdown")
+        except Exception as e:
+            logging.error(f"Ошибка отправки уведомления авто-перевода пользователю {user_id}: {e}")
+
+
 async def send_reminder(bot: Bot, reminder_text: str, task_id: int | None = None):
     """Отправляет текстовое напоминание обоим пользователям."""
     if not reminder_text:
@@ -161,30 +206,17 @@ async def perform_auto_transfer(bot: Bot, amount: Decimal, from_envelope_id: int
 
     async with session_pool() as session:
         repo = RepoHolder(session)
-        env_from = await repo.envelope.get_by_id(from_envelope_id)
-        env_to = await repo.envelope.get_by_id(to_envelope_id)
+        env_from, env_to = await get_envelopes_for_transfer(repo, from_envelope_id, to_envelope_id)
 
-        if not env_from or not env_to:
-            logging.error(f"Нет конвертов для auto_transfer: {from_envelope_id} или {to_envelope_id}")
+        if env_from is None or env_to is None:
             return
 
         logging.info(f"Извлечение auto_transfer: {amount} из '{env_from.name}' в '{env_to.name}'")
 
-        if env_from.balance < amount:
-            msg = f"⚠️ **Авто-перевод не выполнен!**\nНедостаточно средств на «{env_from.name}» для перевода {amount:.2f} ₽."  # noqa: E501
-        else:
-            await repo.transfer.create(from_envelope_id=env_from.id, to_envelope_id=env_to.id, amount=amount)
-            await repo.envelope.update(env_from, balance=env_from.balance - amount)
-            await repo.envelope.update(env_to, balance=env_to.balance + amount)
-            msg = f"🤖 **Авто-перевод выполнен!**\n✅ {amount:.2f} ₽ переведено с «{env_from.name}» на «{env_to.name}»."
+        transfer_successful, msg = await execute_transfer_and_update_balances(repo, amount, env_from, env_to)
 
-        for user_id in settings.allowed_telegram_ids:
-            try:
-                await bot.send_message(user_id, msg, parse_mode="Markdown")
-            except Exception as e:
-                logging.error(f"Failed to send auto_transfer notification to {user_id}: {e}")
-
-    await engine.dispose()
+        if transfer_successful:
+            await send_transfer_notification(bot, msg)
 
 
 async def reload_scheduler_jobs(bot: Bot, session_pool: async_sessionmaker):
