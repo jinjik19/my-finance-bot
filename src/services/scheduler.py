@@ -121,6 +121,7 @@ def create_job_details(task: ScheduledTask, bot: Bot) -> tuple | None:
     if task.task_type == "reminder":
         job_func = send_reminder
         job_kwargs["reminder_text"] = task.reminder_text
+        job_kwargs["task_id"] = task.id
     elif task.task_type == "auto_transfer":
         job_func = perform_auto_transfer
         job_kwargs.update({
@@ -190,7 +191,7 @@ async def send_reminder(bot: Bot, reminder_text: str, task_id: int | None = None
     if not reminder_text:
         return
 
-    logging.info(f"Извлечение напоминаний: {reminder_text}")
+    logging.info(f"Отправка напоминания (ID:{task_id}): '{reminder_text}'")
 
     for user_id in settings.allowed_telegram_ids:
         try:
@@ -228,10 +229,6 @@ async def reload_scheduler_jobs(bot: Bot, session_pool: async_sessionmaker):
         scheduler.timezone = scheduler_timezone
         active_tasks = await get_active_scheduled_tasks(session)
 
-        if not active_tasks:
-            logging.info("Нет активных задач для планирования. Планировщик пустой.")
-            return
-
         for task in active_tasks:
             job_details = create_job_details(task, bot)
 
@@ -243,6 +240,17 @@ async def reload_scheduler_jobs(bot: Bot, session_pool: async_sessionmaker):
                 add_job_to_scheduler(
                     job_func, job_kwargs, task.id, corrected_day, int(task.cron_hour)
                 )
+
+    scheduler.add_job(
+        reload_scheduler_jobs,
+        trigger="cron",
+        day=1,
+        hour=0,
+        minute=1,
+        kwargs={"bot": bot, "session_pool": session_pool},
+        id="monthly_scheduler_reloader",
+        replace_existing=True,
+    )
 
     active_jobs = scheduler.get_jobs()
     logging.info(f"Планировщик перезапустился с {len(active_jobs)} джобами для текущей фазы.")
