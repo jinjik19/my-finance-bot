@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import and_, select
 
 from src.db.models import ScheduledTask
 from src.db.repositories.base import BaseRepository
@@ -18,6 +18,11 @@ class ScheduledTaskRepository(BaseRepository[ScheduledTask]):
         """
         Возвращает все задачи, привязанные к конкретной фазе.
         """
-        stmt = select(self.model).where(self.model.phase_id == phase_id)
+        stmt = select(self.model).where(
+            and_(
+                self.model.phase_id == phase_id,
+                self.model.is_active == True  # noqa: E712
+            )
+        )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
