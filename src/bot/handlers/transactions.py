@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from src.bot.keyboards import get_items_for_action_keyboard
-from src.bot.states import AddTransaction, MakeTransfer, SetInitialBalance
+from src.bot.states import AddTransaction, MakeTransfer
 from src.db.models.user import User
 from src.db.repo_holder import RepoHolder
 
