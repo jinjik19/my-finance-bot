@@ -9,11 +9,20 @@ class EnvelopeRepository(BaseRepository[Envelope]):
     def __init__(self, session) -> None:
         super().__init__(Envelope, session)
 
-    async def get_by_owner_id(self, owner_id: int) -> list[Envelope]:
+    async def get_all_active(self, owner_id: int) -> list[Envelope]:
         """Возвращает все АКТИВНЫЕ конверты конкретного пользователя."""
         stmt = select(self.model).where(
             (self.model.owner_id == owner_id) | (self.model.owner_id.is_(None)),
-            self.model.is_active.is_(True),  # noqa: E712
+            self.model.is_active.is_(True),
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_by_owner_id(self, owner_id: int) -> list[Envelope]:
+        """Возвращает все АКТИВНЫЕ конверты конкретного пользователя."""
+        stmt = select(self.model).where(
+            (self.model.owner_id == owner_id),
+            self.model.is_active.is_(True),
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())

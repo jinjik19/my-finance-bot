@@ -73,3 +73,12 @@ class AddScheduledTask(StatesGroup):
     waiting_for_amount = State()
     choosing_envelope_from = State()
     choosing_envelope_to = State()
+
+
+class SetInitialBalance(StatesGroup):
+    choosing_envelope = State()
+    waiting_for_amount = State()
+
+
+class CommonStates(StatesGroup):
+    waiting_for_timezone = State()

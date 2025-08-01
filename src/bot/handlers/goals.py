@@ -81,7 +81,7 @@ async def add_goal_amount_chosen(message: Message, state: FSMContext, repo: Repo
     await state.update_data(target_amount=target_amount)
 
     user = await repo.user.get_or_create(message.from_user.id, message.from_user.username)
-    envelopes = await repo.envelope.get_by_owner_id(user.id)
+    envelopes = await repo.envelope.get_all_active(user.id)
     await state.set_state(AddGoal.choosing_envelope)
     data = await state.get_data()
 

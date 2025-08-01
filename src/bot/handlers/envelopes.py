@@ -12,7 +12,7 @@ router = Router()
 @router.callback_query(F.data == "list_envelopes")
 async def list_envelopes(callback: CallbackQuery, repo: RepoHolder):
     user = await repo.user.get_or_create(callback.from_user.id, callback.from_user.username)
-    envelopes = await repo.envelope.get_by_owner_id(user.id)
+    envelopes = await repo.envelope.get_all_active(user.id)
 
     if not envelopes:
         await callback.answer("У вас пока нет активных конвертов.", show_alert=True)
@@ -39,7 +39,7 @@ async def add_envelope_start(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == "edit_envelope_menu")
 async def edit_envelope_menu(callback: CallbackQuery, repo: RepoHolder):
     user = await repo.user.get_or_create(callback.from_user.id, callback.from_user.username)
-    envelopes = await repo.envelope.get_by_owner_id(user.id)
+    envelopes = await repo.envelope.get_all_active(user.id)
     await callback.message.edit_text(
         "Выберите конверт для редактирования:",
         reply_markup=get_items_for_action_keyboard(envelopes, "edit", "envelope"),
@@ -131,7 +131,7 @@ async def archive_envelope(callback: CallbackQuery, repo: RepoHolder, state: FSM
         await state.update_data(from_envelope_id=envelope.id, amount=envelope.balance)
 
         user = await repo.user.get_or_create(callback.from_user.id, callback.from_user.username)
-        all_envelopes = await repo.envelope.get_by_owner_id(user.id)
+        all_envelopes = await repo.envelope.get_all_active(user.id)
         other_envelopes = [env for env in all_envelopes if env.id != envelope.id]
 
         await callback.message.edit_text(

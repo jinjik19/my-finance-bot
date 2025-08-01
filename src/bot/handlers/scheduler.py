@@ -169,7 +169,7 @@ async def add_task_transfer_amount_chosen(message: Message, state: FSMContext, r
     await state.update_data(amount=str(amount))  # Сохраняем как строку для JSON
 
     user = await repo.user.get_or_create(message.from_user.id, message.from_user.username)
-    envelopes = await repo.envelope.get_by_owner_id(user.id)
+    envelopes = await repo.envelope.get_all_active(user.id)
 
     await state.set_state(AddScheduledTask.choosing_envelope_from)
     data = await state.get_data()
@@ -189,7 +189,7 @@ async def add_task_from_chosen(callback: CallbackQuery, state: FSMContext, repo:
     await state.update_data(from_envelope_id=from_id)
 
     user = await repo.user.get_or_create(callback.from_user.id, callback.from_user.username)
-    envelopes = await repo.envelope.get_by_owner_id(user.id)
+    envelopes = await repo.envelope.get_all_active(user.id)
     filtered_envelopes = [env for env in envelopes if env.id != from_id]
 
     await state.set_state(AddScheduledTask.choosing_envelope_to)
