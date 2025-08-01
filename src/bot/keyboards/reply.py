@@ -8,11 +8,15 @@ def get_main_menu_keyboard() -> ReplyKeyboardMarkup:
     builder.row(
         KeyboardButton(text="📈 Расход"),
         KeyboardButton(text="💰 Доход"),
-        KeyboardButton(text="📋 Перевод"),
     )
     builder.row(
+        KeyboardButton(text="📋 Перевод"),
         KeyboardButton(text="📊 Статистика"),
+    )
+    builder.row(
+        KeyboardButton(text="💰 Мой баланс"),
         KeyboardButton(text="🔮 Мой квест"),
         KeyboardButton(text="⚙️ Управление"),
     )
+
     return builder.as_markup(resize_keyboard=True)

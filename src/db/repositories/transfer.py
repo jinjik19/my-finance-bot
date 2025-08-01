@@ -46,3 +46,64 @@ class TransferRepository(BaseRepository[Transfer]):
         stmt = select(func.sum(self.model.amount)).where(self.model.from_envelope_id == envelope_id)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none() or Decimal(0)
+
+    async def get_to_envelope_for_period(
+        self,
+        envelope_id: int,
+        start_date: dt.date,
+        end_date: dt.datetime,
+    ) -> list[Transfer]:
+        """Возвращает переводы В конверт за период."""
+        stmt = select(self.model).where(
+            and_(
+                self.model.to_envelope_id == envelope_id,
+                self.model.transfer_date >= start_date,
+                self.model.transfer_date < end_date,
+            )
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_from_envelope_for_period(
+        self,
+        envelope_id: int,
+        start_date: dt.date,
+        end_date: dt.datetime,
+    ) -> list[Transfer]:
+        """Возвращает переводы ИЗ конверта за период."""
+        stmt = select(self.model).where(
+            and_(
+                self.model.from_envelope_id == envelope_id,
+                self.model.transfer_date >= start_date,
+                self.model.transfer_date < end_date,
+            )
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_all_savings_for_period(self, start_date: dt.date, end_date: dt.datetime) -> list[Transfer]:
+        """Возвращает переводы в накопительные конверты за период."""
+        stmt = (
+            select(self.model)
+            .join(Envelope, self.model.to_envelope_id == Envelope.id)
+            .where(
+                and_(
+                    Envelope.is_savings == True,
+                    self.model.transfer_date >= start_date,
+                    self.model.transfer_date < end_date,
+                )
+            )
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_for_period(self, start_date: dt.date, end_date: dt.datetime) -> list[Transfer]:
+        """Возвращает все переводы за период."""
+        stmt = select(self.model).where(
+            and_(
+                self.model.transfer_date >= start_date,
+                self.model.transfer_date < end_date,
+            )
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())

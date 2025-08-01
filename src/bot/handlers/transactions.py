@@ -50,7 +50,7 @@ async def add_transaction_amount_chosen(message: Message, state: FSMContext, rep
     trans_type = data.get("trans_type")
     original_message_id = data.get("_original_message_id")
 
-    all_categories = await repo.category.get_by_owner_id()
+    all_categories = await repo.category.get_all_active()
     filtered_categories = [cat for cat in all_categories if cat.type == trans_type]
 
     await state.set_state(AddTransaction.choosing_category)
@@ -72,7 +72,6 @@ async def add_transaction_category_chosen(callback: CallbackQuery, state: FSMCon
     trans_type = data.get("trans_type")
     original_message_id = data.get("_original_message_id")
 
-    # Для дохода конверт определяется автоматически
     if trans_type == "income":
         income_envelope = await repo.envelope.get_by_owner_id(user.id)
 
@@ -84,7 +83,7 @@ async def add_transaction_category_chosen(callback: CallbackQuery, state: FSMCon
         await _finalize_add_transaction(callback, state, repo, user, income_envelope.id, bot, original_message_id)
         await callback.answer()
     else:
-        envelopes = await repo.envelope.get_by_owner_id_or_null(user.id)
+        envelopes = await repo.envelope.get_all_active(user.id)
         await state.set_state(AddTransaction.choosing_envelope)
         await bot.edit_message_text(
             chat_id=callback.message.chat.id,
@@ -240,7 +239,9 @@ async def make_transfer_to_chosen(callback: CallbackQuery, state: FSMContext, re
     user = await repo.user.get_or_create(callback.from_user.id, callback.from_user.username)
     transfer_date = dt.datetime.now(tz=pytz.timezone(user.timezone))
 
-    await repo.transfer.create(from_envelope_id=env_from.id, to_envelope_id=env_to.id, amount=amount, transfer_date=transfer_date)
+    await repo.transfer.create(
+        from_envelope_id=env_from.id, to_envelope_id=env_to.id, amount=amount, transfer_date=transfer_date
+    )
     await repo.envelope.update(env_from, balance=env_from.balance - amount)
     await repo.envelope.update(env_to, balance=env_to.balance + amount)
 
@@ -250,55 +251,3 @@ async def make_transfer_to_chosen(callback: CallbackQuery, state: FSMContext, re
         chat_id=callback.message.chat.id,
         message_id=original_message_id,
     )
-
-
-@router.message(F.text == "Внести остаток")
-async def set_initial_balance_start(message: Message, state: FSMContext, repo: RepoHolder):
-    await state.set_state(SetInitialBalance.choosing_envelope)
-    await state.update_data(_original_message_id=message.message_id)
-    user = await repo.user.get_or_create(message.from_user.id, message.from_user.username)
-
-    await message.answer(
-        "Выберите конверт для внесения остатка:",
-        reply_markup=get_items_for_action_keyboard(
-            await repo.envelope.get_by_owner_id_or_null(user.id),
-            "set_balance",
-            "envelope"
-        )
-    )
-
-
-@router.callback_query(SetInitialBalance.choosing_envelope, F.data.startswith("set_balance:envelope:"))
-async def set_initial_balance_envelope_chosen(callback: CallbackQuery, state: FSMContext):
-    envelope_id = int(callback.data.split(":")[1])
-    await state.update_data(envelope_id=envelope_id)
-    await state.set_state(SetInitialBalance.waiting_for_amount)
-    data = await state.get_data()
-    original_message_id = data.get("_original_message_id")
-    await callback.message.edit_text("Введите новую сумму для баланса:", chat_id=callback.message.chat.id, message_id=original_message_id)
-    await callback.answer()
-
-
-@router.message(SetInitialBalance.waiting_for_amount)
-async def set_initial_balance_amount_chosen(message: Message, state: FSMContext, repo: RepoHolder, bot: Bot):
-    await message.delete()
-
-    try:
-        amount = Decimal(message.text.replace(",", "."))
-    except InvalidOperation:
-        await message.answer("Пожалуйста, введите корректное число.")
-        return
-
-    data = await state.get_data()
-    envelope_id = data.get("envelope_id")
-    original_message_id = data.get("_original_message_id")
-
-    envelope = await repo.envelope.get_by_id(envelope_id)
-
-    if not envelope:
-        await bot.edit_message_text("❌ Ошибка: конверт не найден.", chat_id=message.chat.id, message_id=original_message_id)
-    else:
-        await repo.envelope.update(envelope, balance=amount)
-        await bot.edit_message_text(f"✅ Баланс конверта «{envelope.name}» успешно установлен на {amount:.2f} ₽.", chat_id=message.chat.id, message_id=original_message_id)
-
-    await state.clear()

@@ -15,8 +15,10 @@ async def show_stats(message: Message, repo: RepoHolder):
     Присылает пользователю отчет за текущий месяц и кнопку
     для перехода в Metabase.
     """
+    user = await repo.user.get_or_create(message.from_user.id, message.from_user.username)
+
     # Вызываем сервис, который выполнит все вычисления
-    report_text = await prepare_current_month_report(repo)
+    report_text = await prepare_current_month_report(repo, user)
 
     # Создаем клавиатуру с кнопкой для Metabase, если он настроен
     builder = InlineKeyboardBuilder()

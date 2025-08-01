@@ -35,3 +35,59 @@ class TransactionRepository(BaseRepository[Transaction]):
         result = await self.session.execute(stmt)
 
         return result.scalar_one_or_none() or Decimal(0)
+
+    async def get_income_for_envelope_and_period(
+        self,
+        envelope_id: int,
+        start_date: dt.date,
+        end_date: dt.datetime,
+    ) -> list[Transaction]:
+        """Возвращает доходы для конкретного конверта за период."""
+        stmt = select(self.model).where(
+            and_(
+                self.model.envelope_id == envelope_id,
+                self.model.transaction_date >= start_date,
+                self.model.transaction_date < end_date,
+                self.model.category.has(type='income')
+            )
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_expense_for_envelope_and_period(
+        self,
+        envelope_id: int,
+        start_date: dt.date,
+        end_date: dt.datetime,
+    ) -> list[Transaction]:
+        """Возвращает расходы для конкретного конверта за период."""
+        stmt = select(self.model).where(
+            and_(
+                self.model.envelope_id == envelope_id,
+                self.model.transaction_date >= start_date,
+                self.model.transaction_date < end_date,
+                self.model.category.has(type='expense')
+            )
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_user_expenses_for_period_and_envelopes(
+        self,
+        user_id: int,
+        envelope_ids: list[int],
+        start_date: dt.date,
+        end_date: dt.datetime,
+    ) -> list[Transaction]:
+        """Возвращает все расходы пользователя за период по списку конвертов."""
+        stmt = select(self.model).where(
+            and_(
+                self.model.user_id == user_id,
+                self.model.envelope_id.in_(envelope_ids),
+                self.model.transaction_date >= start_date,
+                self.model.transaction_date < end_date,
+                self.model.category.has(type='expense')
+            )
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())

@@ -172,3 +172,18 @@ async def archive_transfer_to_chosen(callback: CallbackQuery, state: FSMContext,
         f"✅ Остаток {amount:.2f} ₽ переведен на «{env_to.name}».\n✅ Конверт «{env_from.name}» архивирован."
     )
     await callback.answer()
+
+
+@router.message(F.text == "💰 Мой баланс")
+async def show_my_balance(message: Message, repo: RepoHolder):
+    user = await repo.user.get_or_create(message.from_user.id, message.from_user.username)
+    income_envelope = await repo.envelope.get_by_owner_id(user.id)
+
+    if not income_envelope:
+        await message.answer("❌ Ошибка: доходный конверт не найден.")
+        return
+
+    await message.answer(
+        f"Текущий баланс на вашем доходном конверте «{income_envelope.name}»: `{income_envelope.balance:.2f} ₽`",
+        parse_mode="Markdown"
+    )

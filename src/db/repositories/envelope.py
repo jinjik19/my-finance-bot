@@ -19,7 +19,7 @@ class EnvelopeRepository(BaseRepository[Envelope]):
         return list(result.scalars().all())
 
     async def get_by_owner_id(self, owner_id: int) -> list[Envelope]:
-        """Возвращает все АКТИВНЫЕ конверты конкретного пользователя."""
+        """Возвращает конверты конкретного пользователя."""
         stmt = select(self.model).where(
             (self.model.owner_id == owner_id),
             self.model.is_active.is_(True),
