@@ -12,14 +12,13 @@ logging.basicConfig(level=logging.INFO)
 
 # --- ДАННЫЕ ДЛЯ ЗАПОЛНЕНИЯ ---
 DEFAULT_ENVELOPES = [
-    {"name": "📥 Общий котел", "is_savings": False},
-    {"name": "🛡️ Подушка безопасности", "is_savings": True},
-    {"name": "🧾 Постоянные расходы", "is_savings": False},
-    {"name": "🛒 Переменные расходы", "is_savings": False},
-    {"name": "🎯 Главная Цель", "is_savings": True},
-    {"name": "🏦 На пенсию", "is_savings": True},
-    {"name": "👨 Личные (Женя)", "is_savings": False},
-    {"name": "👩‍🦱 Личные (Таня)", "is_savings": False},
+    {"name": f"💰 Доход ({settings.user_1_username})", "is_savings": False, "owner_id_placeholder": settings.user_1_telegram_id},
+    {"name": f"💰 Доход ({settings.user_2_username})", "is_savings": False, "owner_id_placeholder": settings.user_2_telegram_id},
+
+    # Общие сберегательные конверты (owner_id=None)
+    {"name": "🎯 Главная Цель", "is_savings": True, "owner_id_placeholder": None},
+    {"name": "🛡️ Подушка безопасности", "is_savings": True, "owner_id_placeholder": None},
+    {"name": "🏦 На пенсию", "is_savings": True, "owner_id_placeholder": None},
 ]
 
 DEFAULT_CATEGORIES = {
@@ -44,19 +43,19 @@ DEFAULT_GOALS = [
 ]
 
 DEFAULT_SCHEDULED_TASKS = [
-    {"phase_name": "🎯 Фаза 1: Ипотека", "task_type": "reminder", "cron_day": 5, "cron_hour": 18, "reminder_text": "🔔 Женя, придет зарплата. Пора занести его в 📥 Общий котел."},
-    {"phase_name": "🎯 Фаза 1: Ипотека", "task_type": "reminder", "cron_day": 10, "cron_hour": 17, "reminder_text": "🔔 Таня, придвет зарплата. Пора занести его в 📥 Общий котел."},
-    {"phase_name": "🎯 Фаза 1: Ипотека", "task_type": "reminder", "cron_day": 14, "cron_hour": 20, "reminder_text": "🔔 СРОЧНО: Сегодня нужно оплатить ипотеку (65 000 ₽) из конверта 🎯 Главная Цель!"},
-    {"phase_name": "🎯 Фаза 1: Ипотека", "task_type": "reminder", "cron_day": 20, "cron_hour": 18, "reminder_text": "🔔 Женя, придет аванс. Пора занести ее в 📥 Общий котел."},
-    {"phase_name": "🎯 Фаза 1: Ипотека", "task_type": "reminder", "cron_day": 25, "cron_hour": 17, "reminder_text": "🔔 Таня, придет аванс. Пора занести ее в 📥 Общий котел."},
+    {"phase_name": "🎯 Фаза 1: Ипотека", "task_type": "reminder", "cron_day": 5, "cron_hour": 18, "reminder_text": f"🔔 {settings.user_2_username}, придет зарплата. Пора занести ее в 💰 Доход ({settings.user_2_username})."},
+    {"phase_name": "🎯 Фаза 1: Ипотека", "task_type": "reminder", "cron_day": 10, "cron_hour": 17, "reminder_text": f"🔔 {settings.user_1_username}, придвет зарплата. Пора занести ее в 💰 Доход ({settings.user_1_username})."},
+    {"phase_name": "🎯 Фаза 1: Ипотека", "task_type": "reminder", "cron_day": 14, "cron_hour": 20, "reminder_text": f"🔔 СРОЧНО: Сегодня нужно оплатить ипотеку (65 000 ₽) из конверта 🎯 Главная Цель!"},
+    {"phase_name": "🎯 Фаза 1: Ипотека", "task_type": "reminder", "cron_day": 20, "cron_hour": 18, "reminder_text": f"🔔 {settings.user_2_username}, придет аванс. Пора занести его в 💰 Доход ({settings.user_2_username})."},
+    {"phase_name": "🎯 Фаза 1: Ипотека", "task_type": "reminder", "cron_day": 25, "cron_hour": 17, "reminder_text": f"🔔 {settings.user_1_username}, придет аванс. Пора занести его в 💰 Доход ({settings.user_1_username})."},
 
-    {"phase_name": "🚀 Фаза 2: Переезд", "task_type": "reminder", "cron_day": 5, "cron_hour": 18, "reminder_text": "🔔 Женя, придет зарплата. Пора занести его в 📥 Общий котел."},
-    {"phase_name": "🚀 Фаза 2: Переезд", "task_type": "reminder", "cron_day": 10, "cron_hour": 17, "reminder_text": "🔔 Таня, придвет зарплата. Пора занести его в 📥 Общий котел."},
-    {"phase_name": "🚀 Фаза 2: Переезд", "task_type": "reminder", "cron_day": 20, "cron_hour": 18, "reminder_text": "🔔 Женя, придет аванс. Пора занести ее в 📥 Общий котел."},
-    {"phase_name": "🚀 Фаза 2: Переезд", "task_type": "reminder", "cron_day": 25, "cron_hour": 17, "reminder_text": "🔔 Таня, придет аванс. Пора занести ее в 📥 Общий котел."},
+    {"phase_name": "🚀 Фаза 2: Переезд", "task_type": "reminder", "cron_day": 5, "cron_hour": 18, "reminder_text": f"🔔 {settings.user_2_username}, придет зарплата. Пора занести ее в 💰 Доход ({settings.user_2_username})."},
+    {"phase_name": "🚀 Фаза 2: Переезд", "task_type": "reminder", "cron_day": 10, "cron_hour": 17, "reminder_text": f"🔔 {settings.user_1_username}, придвет зарплата. Пора занести ее в 💰 Доход ({settings.user_1_username})."},
+    {"phase_name": "🚀 Фаза 2: Переезд", "task_type": "reminder", "cron_day": 20, "cron_hour": 18, "reminder_text": f"🔔 {settings.user_2_username}, придет аванс. Пора занести его в 💰 Доход ({settings.user_2_username})."},
+    {"phase_name": "🚀 Фаза 2: Переезд", "task_type": "reminder", "cron_day": 25, "cron_hour": 17, "reminder_text": f"🔔 {settings.user_1_username}, придет аванс. Пора занести его в 💰 Доход ({settings.user_1_username})."},
 
-    {"phase_name": "🏠 Фаза 3: Машина", "task_type": "reminder", "cron_day": 5, "cron_hour": 18, "reminder_text": "🔔 Женя, придет зарплата. Пора занести его в 🏦 На пенсию и 🎯 Главная Цель."},
-    {"phase_name": "🏠 Фаза 3: Машина", "task_type": "reminder", "cron_day": 20, "cron_hour": 18, "reminder_text": "🔔 Женя, придет аванс. Пора занести ее в 🏦 На пенсию и 🎯 Главная Цель."},
+    {"phase_name": "🏠 Фаза 3: Машина", "task_type": "reminder", "cron_day": 5, "cron_hour": 18, "reminder_text": f"🔔 {settings.user_2_username}, придет зарплата. Пора занести его в 🏦 На пенсию и 🎯 Главная Цель."},
+    {"phase_name": "🏠 Фаза 3: Машина", "task_type": "reminder", "cron_day": 20, "cron_hour": 18, "reminder_text": f"🔔 {settings.user_2_username}, придет аванс. Пора занести ее в 🏦 На пенсию и 🎯 Главная Цель."},
 ]
 
 
@@ -65,11 +64,42 @@ async def create_envelopes(repo: RepoHolder) -> dict:
     all_items = await repo.envelope.get_all()
     existing_items = {item.name: item.id for item in all_items}
 
+    user_tg_id_to_db_id = {}
+    for tg_id in settings.allowed_telegram_ids:
+        user_db = await repo.user.get_by_telegram_id(tg_id)
+
+        if user_db:
+            user_tg_id_to_db_id[tg_id] = user_db.id
+            continue
+
+        logging.warning(f"User with telegram_id {tg_id} not found in DB. Envelopes for them might not be created correctly.")
+
     for data in DEFAULT_ENVELOPES:
-        if data["name"] not in existing_items:
-            new_item = await repo.envelope.create(**data, owner_id=None)
+        envelope_name = data["name"]
+        owner_tg_id = data.get("owner_id_placeholder")
+
+        owner_db_id = None
+        if owner_tg_id is not None:
+            owner_db_id = user_tg_id_to_db_id.get(owner_tg_id)
+
+            if owner_db_id is None:
+                logging.error(f"Cannot find DB user ID for Telegram ID {owner_tg_id}. Skipping envelope {envelope_name}.")
+                continue
+
+        if envelope_name not in existing_items:
+            new_item = await repo.envelope.create(
+                name=envelope_name,
+                is_savings=data["is_savings"],
+                owner_id=owner_db_id,
+            )
             existing_items[new_item.name] = new_item.id
-            logging.info(f"Created Envelope: {data['name']}")
+            logging.info(f"Created Envelope: {envelope_name} (owner_id: {owner_db_id})")
+
+    active_default_envelope_names = {env["name"] for env in DEFAULT_ENVELOPES}
+    for old_envelope in all_items:
+        if old_envelope.name not in active_default_envelope_names and old_envelope.is_active:
+            await repo.envelope.update(old_envelope, is_active=False)
+            logging.info(f"Deactivated old Envelope: {old_envelope.name}")
 
     return existing_items
 

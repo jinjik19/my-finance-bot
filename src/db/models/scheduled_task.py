@@ -11,7 +11,7 @@ class ScheduledTask(Base):
 
     phase_id: Mapped[int] = mapped_column(ForeignKey("phases.id"))
 
-    task_type: Mapped[str] = mapped_column(String)  # 'reminder' или 'auto_transfer'
+    task_type: Mapped[str] = mapped_column(String)  # 'reminder'
     cron_day: Mapped[str]
     cron_hour: Mapped[int]
 

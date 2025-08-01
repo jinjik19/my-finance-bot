@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     # --- Telegram ---
     bot_token: str
     allowed_telegram_ids: list[int]
+    user_1_telegram_id: str
+    user_1_username: str
+    user_2_telegram_id: str
+    user_2_username: str
 
     # --- DB connection parts ---
     postgres_user: str
