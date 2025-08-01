@@ -25,7 +25,7 @@ class EnvelopeRepository(BaseRepository[Envelope]):
             self.model.is_active.is_(True),
         )
         result = await self.session.execute(stmt)
-        return list(result.scalars().all())
+        return result.scalar_one_or_none()
 
     async def get_by_name(self, name: str) -> Envelope | None:
         """Находит конверт по его точному имени."""
