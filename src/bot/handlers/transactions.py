@@ -235,7 +235,7 @@ async def make_transfer_to_chosen(callback: CallbackQuery, state: FSMContext, re
         return
 
     user = await repo.user.get_or_create(callback.from_user.id, callback.from_user.username)
-    transfer_date = dt.datetime.now(tz=pytz.timezone(user.timezone))
+    transfer_date = dt.datetime.now(tz=pytz.timezone(user.timezone)).replace(tzinfo=None)
 
     await repo.transfer.create(
         from_envelope_id=env_from.id, to_envelope_id=env_to.id, amount=amount, transfer_date=transfer_date
