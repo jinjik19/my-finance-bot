@@ -200,7 +200,7 @@ async def make_transfer_from_chosen(callback: CallbackQuery, state: FSMContext, 
     await state.update_data(envelope_from_id=envelope_from_id)
 
     user = await repo.user.get_or_create(callback.from_user.id, callback.from_user.username)
-    envelopes = await repo.envelope.get_by_owner_id(user.id)
+    envelopes = await repo.envelope.get_all_active(user.id)
     filtered_envelopes = [env for env in envelopes if env.id != envelope_from_id]
 
     data = await state.get_data()
