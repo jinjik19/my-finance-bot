@@ -35,8 +35,7 @@ def _get_date_range(user_timezone: str) -> tuple[dt.date, dt.datetime]:
 
 async def _calculate_user_specific_balance(repo: RepoHolder, user: User, start_date: dt.date, end_date: dt.datetime) -> dict | None:
     """Рассчитывает остаток, новые доходы и текущий баланс для доходного конверта пользователя."""
-    income_envelope_name = f"💰 Доход ({user.username})"
-    income_envelope = await repo.envelope.get_by_name_and_owner_id(income_envelope_name, user.id)
+    income_envelope = await repo.envelope.get_by_owner_id(user.id)
 
     if not income_envelope:
         return None
