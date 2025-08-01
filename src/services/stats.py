@@ -29,7 +29,7 @@ def _get_date_range(user_timezone: str) -> tuple[dt.date, dt.datetime]:
     timezone = pytz.timezone(user_timezone)
     today = dt.datetime.now(tz=timezone).date()
     start_of_month = today.replace(day=1)
-    end_of_today = dt.datetime.combine(today, dt.time.max, tzinfo=timezone)
+    end_of_today = dt.datetime.combine(today, dt.time.max)
     return start_of_month, end_of_today
 
 

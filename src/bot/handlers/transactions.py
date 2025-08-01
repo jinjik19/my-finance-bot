@@ -171,7 +171,7 @@ async def make_transfer_amount_chosen(message: Message, state: FSMContext, repo:
 
     await state.update_data(amount=amount)
     user = await repo.user.get_or_create(message.from_user.id, message.from_user.username)
-    envelopes = await repo.envelope.get_by_owner_id(user.id)
+    envelopes = await repo.envelope.get_all_active(user.id)
     sufficient_balance_envelopes = [env for env in envelopes if env.balance >= amount]
 
     if not sufficient_balance_envelopes:
