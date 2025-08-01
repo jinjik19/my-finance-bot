@@ -22,23 +22,21 @@ def get_aware_current_date(user: User) -> dt.date:
 
 @router.message(F.text == "📈 Расход")
 async def add_expense_start(message: Message, state: FSMContext):
-    await state.update_data(trans_type="expense", _original_message_id=message.message_id)
+    msg = await message.answer("Введите сумму расхода:")
+    await state.update_data(trans_type="expense", _original_message_id=msg.message_id)
     await state.set_state(AddTransaction.choosing_amount)
-    await message.answer("Введите сумму расхода:")
 
 
 @router.message(F.text == "💰 Доход")
 async def add_income_start(message: Message, state: FSMContext):
     # Для дохода конверт определяется автоматически
-    await state.update_data(trans_type="income", _original_message_id=message.message_id)
+    msg = await message.answer("Введите сумму дохода:")
+    await state.update_data(trans_type="income", _original_message_id=msg.message_id)
     await state.set_state(AddTransaction.choosing_amount)
-    await message.answer("Введите сумму дохода:")
 
 
 @router.message(AddTransaction.choosing_amount)
 async def add_transaction_amount_chosen(message: Message, state: FSMContext, repo: RepoHolder, bot: Bot):
-    await message.delete()
-
     try:
         amount = Decimal(message.text.replace(",", "."))
     except InvalidOperation:
@@ -60,6 +58,7 @@ async def add_transaction_amount_chosen(message: Message, state: FSMContext, rep
         text="Выберите категорию:",
         reply_markup=get_items_for_action_keyboard(filtered_categories, "select", "category"),
     )
+    await message.delete()
 
 
 @router.callback_query(AddTransaction.choosing_category, F.data.startswith("select:category:"))
@@ -157,15 +156,13 @@ async def _finalize_add_transaction(
 
 @router.message(F.text == "📋 Перевод")
 async def make_transfer_start(message: Message, state: FSMContext):
+    msg = await message.answer("Введите сумму перевода:")
     await state.set_state(MakeTransfer.choosing_amount)
-    await state.update_data(_original_message_id=message.message_id)
-    await message.answer("Введите сумму перевода:")
+    await state.update_data(_original_message_id=msg.message_id)
 
 
 @router.message(MakeTransfer.choosing_amount)
 async def make_transfer_amount_chosen(message: Message, state: FSMContext, repo: RepoHolder, bot: Bot):
-    await message.delete()
-
     try:
         amount = Decimal(message.text.replace(",", "."))
     except InvalidOperation:
@@ -194,6 +191,7 @@ async def make_transfer_amount_chosen(message: Message, state: FSMContext, repo:
         message_id=original_message_id,
         reply_markup=get_items_for_action_keyboard(sufficient_balance_envelopes, "from", "envelope"),
     )
+    await message.delete()
 
 
 @router.callback_query(MakeTransfer.choosing_envelope_from, F.data.startswith("from:envelope:"))

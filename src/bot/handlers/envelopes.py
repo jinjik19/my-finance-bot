@@ -74,6 +74,7 @@ async def edit_envelope_name_chosen(message: Message, state: FSMContext, repo: R
     await message.delete()
     data = await state.get_data()
     envelope = await repo.envelope.get_by_id(data.get("envelope_id"))
+
     if envelope:
         await repo.envelope.update(envelope, name=message.text)
 
@@ -83,6 +84,7 @@ async def edit_envelope_name_chosen(message: Message, state: FSMContext, repo: R
                 chat_id=message.chat.id,
                 message_id=data.get("_original_message_id"),
             )
+
     await state.clear()
 
 
@@ -90,6 +92,7 @@ async def edit_envelope_name_chosen(message: Message, state: FSMContext, repo: R
 async def toggle_savings_envelope(callback: CallbackQuery, repo: RepoHolder):
     envelope_id = int(callback.data.split(":")[2])
     envelope = await repo.envelope.get_by_id(envelope_id)
+
     if envelope:
         new_status = not envelope.is_savings
         await repo.envelope.update(envelope, is_savings=new_status)

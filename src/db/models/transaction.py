@@ -1,5 +1,6 @@
 import datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Date,
@@ -8,9 +9,14 @@ from sqlalchemy import (
     Numeric,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+
+if TYPE_CHECKING:
+    from .category import Category
+    from .envelope import Envelope
+    from .user import User
 
 
 class Transaction(Base):
@@ -22,3 +28,7 @@ class Transaction(Base):
     transaction_date: Mapped[datetime.date] = mapped_column(Date)
     comment: Mapped[str | None]
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
+
+    category: Mapped["Category"] = relationship(back_populates="transactions")
+    user: Mapped["User"] = relationship(back_populates="transactions")
+    envelope: Mapped["Envelope"] = relationship(back_populates="transactions")
