@@ -13,9 +13,9 @@ class Settings(BaseSettings):
     # --- Telegram ---
     bot_token: str
     allowed_telegram_ids: list[int]
-    user_1_telegram_id: str
+    user_1_telegram_id: int
     user_1_username: str
-    user_2_telegram_id: str
+    user_2_telegram_id: int
     user_2_username: str
 
     # --- DB connection parts ---
@@ -28,6 +28,8 @@ class Settings(BaseSettings):
 
     # --- DB connection parts ---
     metabase_url: str | None = None
+
+    default_timezone: str = "Asia/Tomsk"
 
     @model_validator(mode="after")
     def assemble_db_connection(self) -> "Settings":

@@ -59,20 +59,30 @@ DEFAULT_SCHEDULED_TASKS = [
 ]
 
 
-async def create_envelopes(repo: RepoHolder) -> dict:
+async def create_users_if_not_exist(repo: RepoHolder) -> dict:
+    """Создает пользователей, если их нет, и возвращает словарь 'telegram_id -> db_id'."""
+    user_tg_id_to_db_id = {}
+    users_to_create = {
+        settings.user_1_telegram_id: settings.user_1_username,
+        settings.user_2_telegram_id: settings.user_2_username,
+    }
+
+    for tg_id, username in users_to_create.items():
+        user_db = await repo.user.get_by_telegram_id(tg_id)
+
+        if not user_db:
+            user_db = await repo.user.create(telegram_id=tg_id, username=username, timezone=settings.default_timezone)
+            logging.info(f"Created User: {username} (Telegram ID: {tg_id})")
+    
+        user_tg_id_to_db_id[tg_id] = user_db.id
+
+    return user_tg_id_to_db_id
+
+
+async def create_envelopes(repo: RepoHolder, user_tg_id_to_db_id: dict) -> dict:
     """Создает конверты и возвращает словарь 'имя -> id'."""
     all_items = await repo.envelope.get_all()
     existing_items = {item.name: item.id for item in all_items}
-
-    user_tg_id_to_db_id = {}
-    for tg_id in settings.allowed_telegram_ids:
-        user_db = await repo.user.get_by_telegram_id(tg_id)
-
-        if user_db:
-            user_tg_id_to_db_id[tg_id] = user_db.id
-            continue
-
-        logging.warning(f"User with telegram_id {tg_id} not found in DB. Envelopes for them might not be created correctly.")
 
     for data in DEFAULT_ENVELOPES:
         envelope_name = data["name"]
@@ -216,7 +226,8 @@ async def seed_data():
     async with session_pool() as session:
         repo = RepoHolder(session)
 
-        envelopes_map = await create_envelopes(repo)
+        user_tg_id_to_db_id = await create_users_if_not_exist(repo)
+        envelopes_map = await create_envelopes(repo, user_tg_id_to_db_id)
         await create_categories(repo)
         phases_map = await create_phases(repo)
         await create_goals(repo, envelopes_map, phases_map)
