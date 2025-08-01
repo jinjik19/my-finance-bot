@@ -25,6 +25,10 @@ jobs:
           echo "POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}" >> .env
           echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" >> .env
           echo "ALLOWED_TELEGRAM_IDS=${{ secrets.ALLOWED_TELEGRAM_IDS }}" >> .env
+          echo "USER_1_TELEGRAM_ID=${{ secrets.USER_1_TELEGRAM_ID }}" >> .env
+          echo "USER_1_USERNAME=${{ secrets.USER_1_USERNAME }}" >> .env
+          echo "USER_2_TELEGRAM_ID=${{ secrets.USER_2_TELEGRAM_ID }}" >> .env
+          echo "USER_2_USERNAME=${{ secrets.USER_2_USERNAME }}" >> .env
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
           echo "METABASE_URL=${{ secrets.METABASE_URL }}" >> .env
           echo "METABASE_DOMAIN=${{ secrets.METABASE_DOMAIN }}" >> .env
