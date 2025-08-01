@@ -12,8 +12,8 @@ logging.basicConfig(level=logging.INFO)
 
 # --- ДАННЫЕ ДЛЯ ЗАПОЛНЕНИЯ ---
 DEFAULT_ENVELOPES = [
-    {"name": f"💰 Доход ({settings.user_1_username})", "is_savings": False, "owner_id_placeholder": settings.user_1_telegram_id},
-    {"name": f"💰 Доход ({settings.user_2_username})", "is_savings": False, "owner_id_placeholder": settings.user_2_telegram_id},
+    {"name": f"💰 Доход ({settings.user_1_username})", "is_savings": False, "owner_id": settings.user_1_telegram_id},
+    {"name": f"💰 Доход ({settings.user_2_username})", "is_savings": False, "owner_id": settings.user_2_telegram_id},
 
     # Общие сберегательные конверты (owner_id=None)
     {"name": "🎯 Главная Цель", "is_savings": True, "owner_id_placeholder": None},
@@ -69,14 +69,14 @@ async def create_envelopes(repo: RepoHolder) -> dict:
         user_db = await repo.user.get_by_telegram_id(tg_id)
 
         if user_db:
-            user_tg_id_to_db_id[tg_id] = user_db.id
+            user_tg_id_to_db_id[tg_id] = user_db.telegram_id
             continue
 
         logging.warning(f"User with telegram_id {tg_id} not found in DB. Envelopes for them might not be created correctly.")
 
     for data in DEFAULT_ENVELOPES:
         envelope_name = data["name"]
-        owner_tg_id = data.get("owner_id_placeholder")
+        owner_tg_id = data.get("owner_id")
 
         owner_db_id = None
         if owner_tg_id is not None:
