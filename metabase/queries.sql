@@ -19,49 +19,50 @@ ORDER BY total DESC;
 -- ====================================================================
 -- Вопрос 2: Динамика Доходов и Расходов (для графика "Комбинированный")
 -- ====================================================================
-WITH MonthlyMovements AS (
-    -- Доходы из таблицы 'transactions' (категория 'income')
+WITH all_flows AS (
+    -- Поток: Доходы -> Конверты (из transactions)
     SELECT
-        date_trunc('month', tx.transaction_date) AS month_start,
-        SUM(tx.amount) AS amount,
-        'income' AS type
-    FROM
-        transactions tx
-    JOIN
-        categories c ON tx.category_id = c.id
-    WHERE
-        c.type = 'income'
-        AND tx.transaction_date >= {{date_filter}}
-    GROUP BY
-        month_start
+        c.name AS "source",
+        e.name AS "target",
+        t.amount AS "value"
+    FROM transactions t
+    JOIN categories c ON t.category_id = c.id
+    JOIN envelopes e ON t.envelope_id = e.id
+    WHERE c.type = 'income'
+    AND t.transaction_date BETWEEN {{start_date}} AND {{end_date}} -- <-- ДОБАВЛЕНО: фильтр по дате
 
     UNION ALL
 
-    -- Расходы из таблицы 'transactions' (категория 'expense')
+    -- Поток: Конверты -> Расходы (из transactions)
     SELECT
-        date_trunc('month', tx.transaction_date) AS month_start,
-        SUM(tx.amount) AS amount,
-        'expense' AS type
-    FROM
-        transactions tx
-    JOIN
-        categories c ON tx.category_id = c.id
-    WHERE
-        c.type = 'expense'
-        AND tx.transaction_date >= {{date_filter}}
-    GROUP BY
-        month_start
+        e.name AS "source",
+        c.name AS "target",
+        t.amount AS "value"
+    FROM transactions t
+    JOIN categories c ON t.category_id = c.id
+    JOIN envelopes e ON t.envelope_id = e.id
+    WHERE c.type = 'expense'
+    AND t.transaction_date BETWEEN {{start_date}} AND {{end_date}} -- <-- ДОБАВЛЕНО: фильтр по дате
+
+    UNION ALL
+
+    -- Поток: Конверт -> Конверт (Переводы)
+    SELECT
+        ef.name AS "source",
+        et.name AS "target",
+        t.amount AS "value"
+    FROM transfers t
+    JOIN envelopes ef ON t.from_envelope_id = ef.id
+    JOIN envelopes et ON t.to_envelope_id = et.id
+    AND t.transfer_date BETWEEN {{start_date}} AND {{end_date}} -- <-- ДОБАВЛЕНО: фильтр по дате
 )
 SELECT
-    mm.month_start,
-    COALESCE(SUM(CASE WHEN mm.type = 'income' THEN mm.amount ELSE 0 END), 0) AS total_income,
-    COALESCE(SUM(CASE WHEN mm.type = 'expense' THEN mm.amount ELSE 0 END), 0) AS total_expense
-FROM
-    MonthlyMovements mm
-GROUP BY
-    mm.month_start
-ORDER BY
-    mm.month_start ASC;
+    "source",
+    "target",
+    SUM("value") AS "value"
+FROM all_flows
+GROUP BY "source", "target"
+ORDER BY SUM("value") DESC;
 
 
 -- ====================================================================
@@ -78,25 +79,31 @@ WHERE g.status = 'active';
 -- ====================================================================
 -- Вопрос 4: Подушка Безопасности в месяцах (для индикатора "Число")
 -- ====================================================================
-SELECT
-  e.balance / (
+WITH
+  monthly_expenses_sums AS (
     SELECT
-      avg(monthly_sum)
+      date_trunc('month', t.transaction_date) AS month,
+      SUM(t.amount) AS monthly_sum
     FROM
-      (
-        SELECT
-          sum(t.amount) AS monthly_sum
-        FROM
-          transactions AS t
-          JOIN categories AS c ON t.category_id = c.id
-        WHERE
-          c.type = 'expense'
-        GROUP BY
-          date_trunc('month', t.transaction_date)
-      ) AS monthly_expenses
-  ) as months_of_safety
+      transactions AS t
+      JOIN categories AS c ON t.category_id = c.id
+    WHERE
+      c.type = 'expense'
+    GROUP BY
+      month
+  ),
+  avg_monthly_expenses AS (
+    SELECT
+      AVG(monthly_sum) AS avg_sum
+    FROM
+      monthly_expenses_sums
+  )
+SELECT
+  e.balance / CASE WHEN avg_monthly_expenses.avg_sum > 0 THEN avg_monthly_expenses.avg_sum ELSE 1 END AS "months_of_safety"
 FROM
   envelopes AS e
+CROSS JOIN
+  avg_monthly_expenses
 WHERE
   e.name = '🛡️ Подушка безопасности';
 
@@ -114,6 +121,7 @@ WITH all_flows AS (
     JOIN categories c ON t.category_id = c.id
     JOIN envelopes e ON t.envelope_id = e.id
     WHERE c.type = 'income'
+    AND t.transaction_date BETWEEN {{start_date}} AND {{end_date}} -- <-- ДОБАВЛЕНО: фильтр по дате
 
     UNION ALL
 
@@ -126,6 +134,7 @@ WITH all_flows AS (
     JOIN categories c ON t.category_id = c.id
     JOIN envelopes e ON t.envelope_id = e.id
     WHERE c.type = 'expense'
+    AND t.transaction_date BETWEEN {{start_date}} AND {{end_date}} -- <-- ДОБАВЛЕНО: фильтр по дате
 
     UNION ALL
 
@@ -137,6 +146,7 @@ WITH all_flows AS (
     FROM transfers t
     JOIN envelopes ef ON t.from_envelope_id = ef.id
     JOIN envelopes et ON t.to_envelope_id = et.id
+    AND t.transfer_date BETWEEN {{start_date}} AND {{end_date}} -- <-- ДОБАВЛЕНО: фильтр по дате
 )
 SELECT
     "source",
@@ -188,41 +198,55 @@ FROM monthly_contributions mc;
 -- ====================================================================
 
 -- Получение остатка на начало месяца для конкретного пользователя
-WITH MonthlyMovements AS (
-    -- Движения в доходный конверт за текущий месяц
+-- Получение остатка на начало месяца для конкретного пользователя
+WITH current_month_movements AS (
+    -- Поступления в конверт (income transactions)
     SELECT
-        e_inc.id AS envelope_id,
-        sum(CASE WHEN c.type = 'income' THEN t.amount ELSE -t.amount END) as net_movement_this_month
+        t.envelope_id AS envelope_id,
+        t.amount AS movement_amount
     FROM transactions t
-    JOIN envelopes e_inc ON t.envelope_id = e_inc.id
-    JOIN categories c ON t.category_id = c.id
-    WHERE e_inc.owner_id = {{user_id}} AND e_inc.name LIKE '💰 Доход %' AND date_trunc('month', t.transaction_date) = date_trunc('month', NOW())
-    GROUP BY e_inc.id
+    WHERE t.envelope_id = 2
+    AND t.transaction_date >= date_trunc('month', NOW())
+    AND t.transaction_date < date_trunc('month', NOW()) + INTERVAL '1 month'
+    AND t.category_id IN (SELECT id FROM categories WHERE type = 'income')
 
     UNION ALL
 
-    -- Переводы из/в доходный конверт за текущий месяц
+    -- Расходы из конверта (expense transactions)
     SELECT
-        e_from.id AS envelope_id,
-        sum(CASE WHEN e_from.id = {{user_id_income_envelope_id}} THEN -t.amount ELSE t.amount END) AS net_movement_this_month
-    FROM transfers t
-    JOIN envelopes e_from ON t.from_envelope_id = e_from.id
-    WHERE e_from.owner_id = {{user_id}} AND e_from.name LIKE '💰 Доход %' AND date_trunc('month', t.transfer_date) = date_trunc('month', NOW())
-    GROUP BY e_from.id
+        t.envelope_id AS envelope_id,
+        -t.amount AS movement_amount
+    FROM transactions t
+    WHERE t.envelope_id = {{income_envelope_id}}
+    AND t.transaction_date >= date_trunc('month', NOW())
+    AND t.transaction_date < date_trunc('month', NOW()) + INTERVAL '1 month'
+    AND t.category_id IN (SELECT id FROM categories WHERE type = 'expense')
 
     UNION ALL
 
+    -- Переводы В конверт
     SELECT
-        e_to.id AS envelope_id,
-        sum(CASE WHEN e_to.id = {{user_id_income_envelope_id}} THEN t.amount ELSE -t.amount END) AS net_movement_this_month
+        t.to_envelope_id AS envelope_id,
+        t.amount AS movement_amount
     FROM transfers t
-    JOIN envelopes e_to ON t.to_envelope_id = e_to.id
-    WHERE e_to.owner_id = {{user_id}} AND e_to.name LIKE '💰 Доход %' AND date_trunc('month', t.transfer_date) = date_trunc('month', NOW())
-    GROUP BY e_to.id
+    WHERE t.to_envelope_id = {{income_envelope_id}}
+    AND t.transfer_date >= date_trunc('month', NOW())
+    AND t.transfer_date < date_trunc('month', NOW()) + INTERVAL '1 month'
+
+    UNION ALL
+
+    -- Переводы ИЗ конверта
+    SELECT
+        t.from_envelope_id AS envelope_id,
+        -t.amount AS movement_amount
+    FROM transfers t
+    WHERE t.from_envelope_id = {{income_envelope_id}}
+    AND t.transfer_date >= date_trunc('month', NOW())
+    AND t.transfer_date < date_trunc('month', NOW()) + INTERVAL '1 month'
 )
 SELECT
-    e.balance - COALESCE(SUM(mm.net_movement_this_month), 0) AS "Баланс на начало месяца"
+    e.balance - COALESCE(SUM(mm.movement_amount), 0) AS "Баланс на начало месяца"
 FROM envelopes e
-LEFT JOIN MonthlyMovements mm ON e.id = mm.envelope_id
-WHERE e.owner_id = {{user_id}} AND e.name LIKE '💰 Доход %'
-GROUP BY e.balance;
+LEFT JOIN current_month_movements mm ON e.id = mm.envelope_id
+WHERE e.id = {{income_envelope_id}}
+GROUP BY e.balance, e.id;
