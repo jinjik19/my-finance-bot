@@ -97,7 +97,6 @@ async def add_phase_start(callback: CallbackQuery, state: FSMContext):
 
 @router.message(AddPhase.choosing_name)
 async def add_phase_name_chosen(message: Message, state: FSMContext, bot: Bot):
-    await message.delete()
     await state.update_data(name=message.text)
     await state.set_state(AddPhase.choosing_monthly_target)
     data = await state.get_data()
@@ -112,8 +111,6 @@ async def add_phase_name_chosen(message: Message, state: FSMContext, bot: Bot):
 
 @router.message(AddPhase.choosing_monthly_target)
 async def add_phase_target_chosen(message: Message, state: FSMContext, repo: RepoHolder, bot: Bot):
-    await message.delete()
-
     try:
         monthly_target = Decimal(message.text.replace(",", "."))
     except InvalidOperation:
@@ -159,7 +156,7 @@ async def edit_phase_name_start(callback: CallbackQuery, state: FSMContext):
 
 @router.message(EditPhase.waiting_for_new_name)
 async def edit_phase_name_chosen(message: Message, state: FSMContext, repo: RepoHolder, bot: Bot):
-    await message.delete()
+
     data = await state.get_data()
     phase = await repo.phase.get_by_id(data.get("phase_id"))
 
@@ -186,8 +183,6 @@ async def edit_phase_target_start(callback: CallbackQuery, state: FSMContext):
 
 @router.message(EditPhase.waiting_for_new_target)
 async def edit_phase_target_chosen(message: Message, state: FSMContext, repo: RepoHolder, bot: Bot):
-    await message.delete()
-
     try:
         monthly_target = Decimal(message.text.replace(",", "."))
     except InvalidOperation:

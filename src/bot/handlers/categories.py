@@ -58,7 +58,6 @@ async def archive_category_menu(callback: CallbackQuery, repo: RepoHolder):
 
 @router.message(AddCategory.choosing_name)
 async def add_category_name_chosen(message: Message, state: FSMContext, bot: Bot):
-    await message.delete()
     data = await state.get_data()
     original_message_id = data.get("_original_message_id")
 
@@ -101,7 +100,6 @@ async def edit_category_start(callback: CallbackQuery, state: FSMContext):
 
 @router.message(EditCategory.waiting_for_new_name)
 async def edit_category_name_chosen(message: Message, state: FSMContext, repo: RepoHolder, bot: Bot):
-    await message.delete()
     data = await state.get_data()
     category = await repo.category.get_by_id(data.get("category_id"))
     original_message_id = data.get("_original_message_id")

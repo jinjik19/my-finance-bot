@@ -56,7 +56,6 @@ async def add_goal_start(callback: CallbackQuery, state: FSMContext):
 
 @router.message(AddGoal.choosing_name)
 async def add_goal_name_chosen(message: Message, state: FSMContext, bot: Bot):
-    await message.delete()
     await state.update_data(name=message.text)
     await state.set_state(AddGoal.choosing_target_amount)
     data = await state.get_data()
@@ -70,8 +69,6 @@ async def add_goal_name_chosen(message: Message, state: FSMContext, bot: Bot):
 
 @router.message(AddGoal.choosing_target_amount)
 async def add_goal_amount_chosen(message: Message, state: FSMContext, repo: RepoHolder, bot: Bot):
-    await message.delete()
-
     try:
         target_amount = Decimal(message.text.replace(",", "."))
     except InvalidOperation:
@@ -145,7 +142,6 @@ async def edit_goal_start(callback: CallbackQuery, state: FSMContext):
 
 @router.message(EditGoal.waiting_for_new_name)
 async def edit_goal_name_chosen(message: Message, state: FSMContext, repo: RepoHolder, bot: Bot):
-    await message.delete()
     data = await state.get_data()
     goal = await repo.goal.get_by_id(data.get("goal_id"))
     if goal:

@@ -81,8 +81,6 @@ async def add_task_type_chosen(callback: CallbackQuery, state: FSMContext):
 
 @router.message(AddScheduledTask.choosing_day)
 async def add_task_day_chosen(message: Message, state: FSMContext, bot: Bot):
-    await message.delete()
-
     try:
         day = int(message.text)
         if not 1 <= day <= 28:
@@ -103,8 +101,6 @@ async def add_task_day_chosen(message: Message, state: FSMContext, bot: Bot):
 
 @router.message(AddScheduledTask.choosing_hour)
 async def add_task_hour_chosen(message: Message, state: FSMContext, repo: RepoHolder, bot: Bot):
-    await message.delete()
-
     try:
         hour = int(message.text)
 
@@ -135,7 +131,6 @@ async def add_task_hour_chosen(message: Message, state: FSMContext, repo: RepoHo
 async def add_task_reminder_text_chosen(
     message: Message, state: FSMContext, repo: RepoHolder, bot: Bot, session_pool: async_sessionmaker
 ):
-    await message.delete()
     data = await state.get_data()
     original_message_id = data.get("_original_message_id")
     system_state = await repo.state.get_by_id(1)
@@ -158,8 +153,6 @@ async def add_task_reminder_text_chosen(
 
 @router.message(AddScheduledTask.waiting_for_amount)
 async def add_task_transfer_amount_chosen(message: Message, state: FSMContext, repo: RepoHolder, bot: Bot):
-    await message.delete()
-
     try:
         amount = Decimal(message.text.replace(",", "."))
     except InvalidOperation:

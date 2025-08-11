@@ -58,7 +58,6 @@ async def add_transaction_amount_chosen(message: Message, state: FSMContext, rep
         text="Выберите категорию:",
         reply_markup=get_items_for_action_keyboard(filtered_categories, "select", "category"),
     )
-    await message.delete()
 
 
 @router.callback_query(AddTransaction.choosing_category, F.data.startswith("select:category:"))
@@ -191,7 +190,6 @@ async def make_transfer_amount_chosen(message: Message, state: FSMContext, repo:
         message_id=original_message_id,
         reply_markup=get_items_for_action_keyboard(sufficient_balance_envelopes, "from", "envelope"),
     )
-    await message.delete()
 
 
 @router.callback_query(MakeTransfer.choosing_envelope_from, F.data.startswith("from:envelope:"))

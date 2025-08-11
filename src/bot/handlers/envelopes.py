@@ -71,7 +71,6 @@ async def edit_envelope_name_start(callback: CallbackQuery, state: FSMContext):
 
 @router.message(EditEnvelope.waiting_for_new_name)
 async def edit_envelope_name_chosen(message: Message, state: FSMContext, repo: RepoHolder, bot: Bot):
-    await message.delete()
     data = await state.get_data()
     envelope = await repo.envelope.get_by_id(data.get("envelope_id"))
 
@@ -105,7 +104,6 @@ async def toggle_savings_envelope(callback: CallbackQuery, repo: RepoHolder):
 
 @router.message(AddEnvelope.choosing_name)
 async def add_envelope_name_chosen(message: Message, state: FSMContext, repo: RepoHolder, bot: Bot):
-    await message.delete()
     data = await state.get_data()
     original_message_id = data.get("_original_message_id")
 
